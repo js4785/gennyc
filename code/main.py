@@ -39,8 +39,8 @@ CLOUDSQL_PASSWORD = os.environ.get('CLOUDSQL_PASSWORD')
 # CLOUDSQL_USER = "kayvon"
 # CLOUDSQL_PASSWORD = "kayvon"
 
-# DB_HOST_DEV = '35.193.223.145'
-DB_HOST_DEV = "127.0.0.1" # Using for local setup
+DB_HOST_DEV = '35.193.223.145'
+# DB_HOST_DEV = "127.0.0.1" # Using for local setup
 
 # ENV = ''
 # if os.environ.get('BRANCH') != 'master':
@@ -60,7 +60,7 @@ MOCK_EVENTS = [Event('Rollerblading Tour of Central Park', 2018, 3, 20, 'Join th
 api = Api(app)
 randomKey= '472389hewhuw873dsa4245193ej23yfehw'
 
-BING_KEY = "50e4e5baced54241a030d0f5b56bee7c" 
+BING_KEY = "50e4e5baced54241a030d0f5b56bee7c"
 
 
 def connect_to_cloudsql():
@@ -578,7 +578,7 @@ def grab_tag_pictures(tags):
     # img_urls = {}
     # for tag in tags:
         # search_service = PyMsCognitiveImageSearch(BING_KEY, tag)
-        
+
         # img_result = search_service.search(limit=1, format='json') #1-50
 
         # img_urls[tag] = img_result[0]['thumbnail_url']

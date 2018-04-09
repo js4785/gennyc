@@ -78,7 +78,7 @@ class MailBlastCron(Resource):
     def get(self):
         task = taskqueue.add(
             method='GET',
-            url='/jobs/mail/email_blast_all')
+            url='/jobs/mail/blast_all')
         return 'Task {} enqueued, ETA {}.'.format(task.name, task.eta), 200
 api.add_resource(MailBlastCron, '/jobs/mail/queue_emails')
 

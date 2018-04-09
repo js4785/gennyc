@@ -92,15 +92,26 @@ class ExecuteMailBlast(Resource):
             user = User(*row)
             rec = recommender.Recommend(user)
             events = rec.get_events()
+            events = helper_strip_date(events)
             event_string = ''
-            for eid, ename, start_date, end_date, num_cap, num_attending, tag in events:
-                event_string += "{}, {} to {}, {}/{} filled\n\n".format(ename, start_date, end_date, num_attending, num_cap)
-            # print(event_string)
+            for eid, ename, desc, start_date, end_date, num_cap, num_attending, lname, add, tag, lat, lon in events:
+                if (desc is None):
+                    desc = ''
+                event_string += "{}, {} to {}, {}/{} filled\n{}\n\n".format(ename, start_date, end_date, num_attending, num_cap, desc)
+            print(event_string)
             body = 'Hey {},\n\nHere are some upcoming events we think you might be interested in:\n\n\n{}'.format(user.fname, event_string)
-            # print(user.email)
+            print(user.email)
             send_events_email(user.email, body)
-        return 200
+        return {}, 200
 api.add_resource(ExecuteMailBlast, '/jobs/mail/blast_all')
+
+def helper_strip_date(e):
+    for idx, x in enumerate(e):
+        if type(x) is datetime.datetime:
+            e = list(e)
+            e[idx] = x.strftime('%B %d %I:%M %p')
+            e = tuple(e)
+    return e
 
 def send_events_email(address, email_body):
     sender_address = (

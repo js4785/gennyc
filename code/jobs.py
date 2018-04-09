@@ -23,6 +23,8 @@ from event import Event, EventForm
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
 from flask_restful import Resource, Api
 import datetime
+import jinja2
+
 
 # These environment variables are configured in app.yaml.
 CLOUDSQL_CONNECTION_NAME = os.environ.get('CLOUDSQL_CONNECTION_NAME')
@@ -92,16 +94,22 @@ class ExecuteMailBlast(Resource):
             user = User(*row)
             rec = recommender.Recommend(user)
             events = rec.get_events()
-            events = helper_strip_date(events)
-            event_string = ''
-            for eid, ename, desc, start_date, end_date, num_cap, num_attending, lname, add, tag, lat, lon in events:
-                if (desc is None):
-                    desc = ''
-                event_string += "{}, {} to {}, {}/{} filled\n{}\n\n".format(ename, start_date, end_date, num_attending, num_cap, desc)
-            print(event_string)
-            body = 'Hey {},\n\nHere are some upcoming events we think you might be interested in:\n\n\n{}'.format(user.fname, event_string)
-            print(user.email)
-            send_events_email(user.email, body)
+            interests = set()
+            for e in events:
+                interests.add(e[-3])
+            for event_index, e in enumerate(events):
+                events[event_index] = helper_strip_date(e)
+
+            formatted_event_email(user.email, list(interests), events)
+            # event_string = ''
+            # for eid, ename, desc, start_date, end_date, num_cap, num_attending, lname, add, tag, lat, lon in events:
+            #     if (desc is None):
+            #         desc = ''
+            #     event_string += "{}, {} to {}, {}/{} filled\n{}\n\n".format(ename, start_date, end_date, num_attending, num_cap, desc)
+            # print(event_string)
+            # body = 'Hey {},\n\nHere are some upcoming events we think you might be interested in:\n\n\n{}'.format(user.fname, event_string)
+            # print(user.email)
+            # send_events_email(user.email, body)
         return {}, 200
 api.add_resource(ExecuteMailBlast, '/jobs/mail/blast_all')
 
@@ -122,20 +130,24 @@ def send_events_email(address, email_body):
     # print(sender_address, address, subject, email_body)
     mail.send_mail(sender_address, address, subject, email_body)
 
-class TaskQueueTest(Resource):
-    def get(self):
-        task = taskqueue.add(
-            method='GET',
-            url='/jobs/mail/test_execute')
-        return 'Task {} enqueued, ETA {}.'.format(task.name, task.eta), 200
-api.add_resource(TaskQueueTest, '/jobs/mail/test')
 
-class ExecuteTest(Resource):
-    def get(self):
-        send_events_email('kss2153@columbia.edu', 'fhdjskfhjdsk test')
-        return 200
-api.add_resource(ExecuteTest, '/jobs/mail/test_execute')
+def formatted_event_email(address, interests, events):
+    sender  = 'genNYC <support@{}.appspotmail.com>'.format(app_identity.get_application_id())
+    jinja_environment = jinja2.Environment(
+        loader=jinja2.FileSystemLoader(os.path.dirname(__file__)))
 
+    template = jinja_environment.get_template('templates/email_template.html')
+    email_body = template.render({'survey_results':interests, 'events':events})
+
+    today = datetime.datetime.now()
+    message = mail.EmailMessage(
+        sender = sender,
+        to = address,
+        subject = 'Weekly event recommendations! - {}/{}'.format(today.month, today.day),
+        html = email_body)
+
+    message.send()
+    return 'OK'
 
 
 

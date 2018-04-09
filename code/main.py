@@ -376,25 +376,6 @@ def send_email(address, username):
     mail.send_mail(sender_address, address, subject, body)
 
 
-# @app.route('/email/<address>/<username>')
-# def email(address, username):
-#     send_email(address, username)
-#     return redirect(url_for('home'))
-#
-#
-# class ConfirmRegistration(Resource):
-#     def get(self, username):
-#         return {'username': username }
-#
-# api.add_resource(ConfirmRegistration, '/api/emailConf/<string:username>')
-#
-# class TestJob(Resource):
-#     def get(self):
-#         print('job run')
-#         return {'test': 'success' }, 200
-# api.add_resource(TestJob, '/jobs/test')
-
-
 @app.route('/emailConf/<string:key>/<string:username>')
 def confirm(key, username):
     if not key == randomKey:

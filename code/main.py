@@ -264,6 +264,7 @@ def helper_strip_date(e):
             e = tuple(e)
         if type(x) is str:
             e = list(e)
+            print x
             e[idx] = x.decode('utf-8')
             e = tuple(e)
     return e

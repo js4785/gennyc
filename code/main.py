@@ -239,6 +239,9 @@ def recommend():
     rec = recommender.Recommend(current_user)
     # interests = rec.get_user_interests()
     events = rec.get_events()
+    print (len(events))
+
+    # events = events[0:80]
 
     # Create set of interests
     interests = set()
@@ -247,9 +250,8 @@ def recommend():
         interests.add(e[-3])
 
     for event_index, e in enumerate(events):
-        events[event_index] = helper_strip_date(e)
 
-    print(events)
+        events[event_index] = helper_strip_date(e)
 
     return render_template("recommendations.html", survey_results=list(interests), events=events)
 
@@ -259,6 +261,10 @@ def helper_strip_date(e):
         if type(x) is datetime.datetime:
             e = list(e)
             e[idx] = x.strftime('%B %d %I:%M %p')
+            e = tuple(e)
+        if type(x) is str:
+            e = list(e)
+            e[idx] = x.decode('utf-8')
             e = tuple(e)
     return e
 

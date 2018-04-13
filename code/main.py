@@ -241,7 +241,8 @@ def recommend():
     events = rec.get_events()
     print (len(events))
 
-    # events = events[0:80]
+    if len(events) > 50:
+        events = events[0:50]
 
     # Create set of interests
     interests = set()

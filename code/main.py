@@ -8,6 +8,8 @@ except ImportError:
     logging.warning('google app engine unable to be imported')
 
 from flask import Flask, render_template, redirect, url_for, request, make_response
+import datetime
+
 app = Flask(__name__)
 app.debug = True
 
@@ -23,6 +25,7 @@ from flask_login import LoginManager, login_required, login_user, logout_user, c
 from flask_restful import Resource, Api
 import datetime
 import jinja2
+from py_ms_cognitive import PyMsCognitiveImageSearch
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -56,6 +59,8 @@ MOCK_EVENTS = [Event('Rollerblading Tour of Central Park', 2018, 3, 20, 'Join th
 
 api = Api(app)
 randomKey= '472389hewhuw873dsa4245193ej23yfehw'
+
+BING_KEY = "50e4e5baced54241a030d0f5b56bee7c"
 
 
 def connect_to_cloudsql():
@@ -99,16 +104,20 @@ def authenticate_user(user):
         return True
     return False
 
-@login_manager.user_loader
-def load_user(user_name):
+def get_user_from_username(user_name):
     db = connect_to_cloudsql()
     cursor = db.cursor()
     cursor.execute("SELECT username, password, email, fname, lname, dob, timezone, email_verified FROM " + ENV_DB + ".Users WHERE username='" + user_name + "'")
     data = cursor.fetchone()
     db.close()
+    return data
+
+@login_manager.user_loader
+def load_user(user_name):
+    data = get_user_from_username(user_name)
     if data is None:
         return None
-    print(data, User(*data))
+    # print(data, User(*data))
     return User(*data)
 
 
@@ -173,11 +182,13 @@ def register():
 
     return render_template('register.html', error = error)
 
+
 @app.route('/verify', methods=['GET','POST'])
 def verify():
     if (request.method == 'POST'):
         send_email(current_user.email, current_user.username)
     return render_template('verify_email.html')
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -212,18 +223,8 @@ def home():
     # return render_template("results.html", MOCK_EVENTS=MOCK_EVENTS)
 
 
-@app.route('/group')
-def group():
-    return render_template("group.html")
-
-
 @app.route('/explore')
 def explore_events():
-    # q = {
-    #     "Wine tastery": "2843 Broadway New York, NY 10027",
-    #      "Picnic at the park": "Morningside Dr, New York, NY 10026",
-    #      "Coffee date": "2194 Frederick Douglass Blvd, New York, NY 10019"
-    # }
 
     return render_template("explore.html")
 
@@ -238,12 +239,36 @@ def recommend():
     rec = recommender.Recommend(current_user)
     # interests = rec.get_user_interests()
     events = rec.get_events()
+    print (len(events))
 
+    if len(events) > 50:
+        events = events[0:50]
+
+    # Create set of interests
     interests = set()
     for e in events:
-        interests.add(e[6])
+        #  Extract interets from Event entity (assuming last attribute)
+        interests.add(e[-3])
+
+    for event_index, e in enumerate(events):
+
+        events[event_index] = helper_strip_date(e)
 
     return render_template("recommendations.html", survey_results=list(interests), events=events)
+
+
+def helper_strip_date(e):
+    for idx, x in enumerate(e):
+        if type(x) is datetime.datetime:
+            e = list(e)
+            e[idx] = x.strftime('%B %d %I:%M %p')
+            e = tuple(e)
+        if type(x) is str:
+            e = list(e)
+            print x
+            e[idx] = x.decode('utf-8')
+            e = tuple(e)
+    return e
 
 
 def fill_user_tags(user, survey):
@@ -263,7 +288,6 @@ def fill_user_tags(user, survey):
         for item in items:
             query = "INSERT INTO " + ENV_DB + ".UserTags(username, tag, category) VALUES ('{}', '{}', '{}') \
             ON DUPLICATE KEY UPDATE tag=VALUES(tag), category=VALUES(category)".format(user.username, item, cname)
-            print(query)
             cursor.execute(query)
 
     db.commit()
@@ -319,9 +343,34 @@ def create_event():
         event = EventForm()
         form.populate_obj(event)
 
+        # Create Event form submission
+        fill_event(current_user, event)
+
         return redirect(url_for('home'))
 
     return render_template('create_event.html', title='Create Event', form=form)
+
+
+def fill_event(user, event):
+    """Form POST DB query for create_event.
+    """
+
+    db = connect_to_cloudsql()
+    cursor = db.cursor()
+
+    # Insert location of event into Locations table
+    location_query = "INSERT IGNORE INTO " + ENV_DB + ".Locations(lname, lat, lon, address_1, address_2, zip, city, state) \
+    VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')".format(event.name, event.lat, event.lng, event.formatted_address, event.address_2, event.postal_code, event.sublocality, event.administrative_area_level_1_short)
+    cursor.execute(location_query)
+
+    # Get lid of last inserted locatiion, add event to Events table
+    lid = cursor.lastrowid
+    query = "INSERT INTO " + ENV_DB + ".Events(ename, description, start_date, end_date, num_cap, num_attending, lid) \
+    VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}')".format(event.event_name, event.description, event.start_date, event.end_date, event.cap, event.attending, lid)
+    cursor.execute(query)
+
+    db.commit()
+    db.close()
 
 
 def send_email(address, username):
@@ -333,25 +382,6 @@ def send_email(address, username):
     body = "Thank you for creating an account!\n\nPlease confirm your email address by clicking on the link below:\n\n{}".format(confirmation_url)
     print(sender_address, address, subject, body)
     mail.send_mail(sender_address, address, subject, body)
-
-
-@app.route('/email/<address>/<username>')
-def email(address, username):
-    send_email(address, username)
-    return redirect(url_for('home'))
-
-
-class ConfirmRegistration(Resource):
-    def get(self, username):
-        return {'username': username }
-
-api.add_resource(ConfirmRegistration, '/api/emailConf/<string:username>')
-
-class TestJob(Resource):
-    def get(self):
-        print('job run')
-        return {'test': 'success' }, 200
-api.add_resource(TestJob, '/jobs/test')
 
 
 @app.route('/emailConf/<string:key>/<string:username>')
@@ -368,30 +398,180 @@ def confirm(key, username):
 
     return redirect(url_for('login'))
 
-@app.route('/test_email')
-def test_email():
-    sender  = 'genNYC <support@{}.appspotmail.com>'.format(app_identity.get_application_id())
-    email = 'kss2153@columbia.edu'
-    confirm_url = 'google.com'
-    jinja_environment = jinja2.Environment(
-        loader=jinja2.FileSystemLoader(os.path.dirname(__file__)))
-    template = jinja_environment.get_template('templates/email_template.html')
-    email_body = template.render({'confirm_url': confirm_url})
+# @app.route('/test_email')
+# def test_email():
+#     sender  = 'genNYC <support@{}.appspotmail.com>'.format(app_identity.get_application_id())
+#     email = 'kss2153@columbia.edu'
+#     confirm_url = 'google.com'
+#     jinja_environment = jinja2.Environment(
+#         loader=jinja2.FileSystemLoader(os.path.dirname(__file__)))
+#     template = jinja_environment.get_template('templates/email_template.html')
+#     email_body = template.render({'confirm_url': confirm_url})
+#
+#     message = mail.EmailMessage(
+#         sender = email,
+#         to = email,
+#         subject = 'Please confirm your subscription to Mailing-List XYZ',
+#         html = email_body)
+#
+#     message.send()
+#     return 'OK'
 
-    message = mail.EmailMessage(
-        sender = email,
-        to = email,
-        subject = 'Please confirm your subscription to Mailing-List XYZ',
-        html = email_body)
+def get_group_names(user):
+    db = connect_to_cloudsql()
+    cursor = db.cursor()
 
-    message.send()
-    return 'OK'
+    query = "SELECT groupName, status from " + ENV_DB + ".Groups WHERE username='" + user.username + "'"
+    cursor.execute(query)
+    data = cursor.fetchall()
+    db.close()
+    return list((i[0],i[1]) for i in data)
+
+def get_group_members(group_name):
+    db = connect_to_cloudsql()
+    cursor = db.cursor()
+    query = ("SELECT username from " + ENV_DB + ".Groups WHERE groupName='{}'").format(group_name)
+    cursor.execute(query)
+    data = cursor.fetchall()
+    db.close()
+    return list(i[0] for i in data)
+
+def add_group(group_name, users):
+    db = connect_to_cloudsql()
+    users.append(current_user.username)
+    for user in users:
+        cursor = db.cursor()
+        status = '2'
+        if (user == current_user.username):
+            status = '1'
+        query = ("INSERT INTO " + ENV_DB + ".Groups(groupName, username, status) \
+        VALUES ('{}','{}','{}')").format(group_name, user, status)
+        cursor.execute(query)
+    db.commit()
+    db.close()
+
+
+@app.route('/groups')
+@login_required
+def group():
+    groups = get_group_names(current_user)
+    pending = {}
+    accepted = {}
+    for group_name, status in groups:
+        members = get_group_members(group_name)
+        if (status == '1'):
+            accepted[group_name] = members
+        elif (status == '2'):
+            pending[group_name] = members
+    return render_template("group.html", pending=pending, accepted=accepted)
+
+class CreateGroup(Resource):
+    def put(self, groupname):
+        users = request.args.getlist('users')
+        add_group(groupname, users)
+        return {}, 200
+
+api.add_resource(CreateGroup, '/api/new_group/<string:groupname>')
+
+class CheckValidUser(Resource):
+    def get(self, username):
+        if (username == current_user.username):
+            return {}, 201
+        db = connect_to_cloudsql()
+        cursor = db.cursor()
+        cursor.execute("SELECT * FROM " + ENV_DB + ".Users WHERE username='" + username + "'")
+        data = cursor.fetchone()
+        db.close()
+        if (data):
+            return {}, 200
+        else:
+            return {}, 201
+api.add_resource(CheckValidUser, '/api/validate_username/<string:username>')
+
+class CheckValidUserExisting(Resource):
+    def get(self, group, username):
+        if (username == current_user.username):
+            return {}, 201
+        db = connect_to_cloudsql()
+        cursor = db.cursor()
+        cursor.execute("SELECT * FROM " + ENV_DB + ".Users WHERE username='" + username + "'")
+        data = cursor.fetchone()
+        if not data:
+            return {}, 201
+        cursor.execute("SELECT * FROM " + ENV_DB + ".Groups WHERE groupName='"+ group +"' AND username='" + username + "'")
+        data = cursor.fetchone()
+        if data:
+            return {}, 201
+        else:
+            return {}, 200
+api.add_resource(CheckValidUserExisting, '/api/validate_username/existing/<string:group>/<string:username>')
+
+class CheckValidGroupName(Resource):
+    def get(self, group_name):
+        if (group_name == ''):
+            return {}, 201
+        db = connect_to_cloudsql()
+        cursor = db.cursor()
+        cursor.execute("SELECT * FROM " + ENV_DB + ".Groups WHERE groupName='" + group_name + "'")
+        data = cursor.fetchone()
+        db.close()
+        if (data):
+            return {}, 201
+        else:
+            return {}, 200
+api.add_resource(CheckValidGroupName, '/api/validate_groupname/<string:group_name>')
+
+class RespondToRequest(Resource):
+    def put(self, group_name, response):
+        status = 1
+        if (response == 'reject'):
+            status = 3
+        db = connect_to_cloudsql()
+        cursor = db.cursor()
+        cursor.execute("UPDATE " + ENV_DB + ".Groups SET status='"+ str(status) +"' \
+        WHERE username='" + current_user.username + "' AND groupName='"+ group_name +"'")
+        db.commit()
+        db.close()
+        return {}, 200
+api.add_resource(RespondToRequest, '/api/respond_to_request/<string:group_name>/<string:response>')
+
+
+@app.route('/profile/<string:username>')
+@login_required
+def profile(username):
+    data = get_user_from_username(username)
+    if data is None:
+        return {}, 500
+    user = User(*data)
+    r = recommender.Recommend(user)
+
+    tags = r.get_user_interests_with_categories()
+    # return render_template('profile.html', user=user, join_date=db_date_to_normal(user.join_date), img_urls=grab_tag_pictures([tag[0] for tag in tags]), tags=tags)
+
+    return render_template('profile.html', user=user, join_date=db_date_to_normal(user.join_date), tags=tags)
+
 
 
 @app.errorhandler(401)
 def page_not_found(e):
     error = 'You must be logged in to view this page.'
     return render_template('error.html', error=error)
+
+
+def db_date_to_normal(db_date):
+    return db_date.strftime("%B %d, %Y")
+
+
+def grab_tag_pictures(tags):
+    pass
+    # img_urls = {}
+    # for tag in tags:
+        # search_service = PyMsCognitiveImageSearch(BING_KEY, tag)
+
+        # img_result = search_service.search(limit=1, format='json') #1-50
+
+        # img_urls[tag] = img_result[0]['thumbnail_url']
+    # return img_urls
 
 if __name__ == '__main__':
     app.run(debug=True)

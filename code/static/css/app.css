@@ -8,6 +8,13 @@ body {
   font-family: 'Roboto', Helvetica, sans-serif;
   background: linear-gradient(rgba(255, 0, 0, 0), #00264691), url("../img/newyork.jpg") no-repeat fixed center center;
   background-size: cover;
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+}
+
+body > .container {
+  flex: 1 0 auto;
 }
 
 .bg-container {
@@ -88,6 +95,12 @@ form [type="checkbox"] + span:not(.lever) {
 
 form li {
   padding-bottom: 0;
+}
+
+.card.horizontal .card-image img {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
 }
 
 .mdl-modal {
@@ -237,4 +250,23 @@ span.interest {
     line-height: inherit;
     font-size: inherit;
   }
+}
+
+#profile-page-header .card-image {
+  height: 250px;
+}
+#profile-page-header .card-profile-image {
+  width: 110px;
+  position: absolute;
+  top: 190px;
+  z-index: 1;
+  left: 40px;
+  cursor: pointer;
+  margin: 0;
+}
+#profile-page-header .card-content{
+  margin-top: -40px;
+}
+#profile-page-header .card-content .card-title{
+  margin-bottom: 0px;
 }

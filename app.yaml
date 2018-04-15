@@ -18,6 +18,9 @@ handlers:
   login: admin
 - url: .*  # This regex directs all routes to main.app
   script: code.main.app
+- url: /static
+  static_dir: code/static
+  application_readable: true
 
 # [START env_variables]
 env_variables:

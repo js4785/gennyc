@@ -9,6 +9,14 @@ class Recommend:
         self.user = user
         self.most_interested = []
 
+    def get_user_interests_with_categories(self):
+        db = main.connect_to_cloudsql()
+        cursor = db.cursor()
+        cursor.execute("SELECT tag, category FROM " + ENV_DB + ".UserTags WHERE username='" + self.user.username + "'")
+        data = cursor.fetchall()
+        db.close()
+        return list((i[0], i[1]) for i in data)
+
     def get_user_interests(self):
         db = main.connect_to_cloudsql()
         cursor = db.cursor()
@@ -39,12 +47,15 @@ class Recommend:
         cursor = db.cursor()
 
         query = """
-                SELECT DISTINCT E.eid, E1.ename, E1.start_date, E1.end_date, E1.num_cap, E1.num_attending, E.tag
-                FROM {}.EventTags AS E, {}.UserTags AS U, {}.Events as E1
+                SELECT DISTINCT E.eid, E1.ename, E1.description, E1.start_date, E1.end_date, E1.num_cap,
+                E1.num_attending, L.lname, L.address_1, E.tag, L.lat, L.lon
+                FROM {}.EventTags AS E, {}.UserTags AS U, {}.Events as E1, {}.Locations as L
                 WHERE U.username='{}' AND
                     E.tag = U.tag AND
-                    E1.eid = E.eid
+                    E1.eid = E.eid AND
+                    E1.lid = L.lid
                 """.format(
+                        ENV_DB,
                         ENV_DB,
                         ENV_DB,
                         ENV_DB,
@@ -55,7 +66,7 @@ class Recommend:
         data = cursor.fetchall()
         db.close()
 
-        return sorted([i for i in data])
+        return [i for i in data]
 
         # mock_events = {
         #     "wine": ["Wine Tastery", "Vino Wine"],

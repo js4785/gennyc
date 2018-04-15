@@ -25,6 +25,7 @@ from flask_login import LoginManager, login_required, login_user, logout_user, c
 from flask_restful import Resource, Api
 import datetime
 import jinja2
+import json
 from py_ms_cognitive import PyMsCognitiveImageSearch
 
 login_manager = LoginManager()
@@ -54,8 +55,8 @@ DB_HOST_DEV = '35.193.223.145'
 ENV_DB = 'Dev'
 # print (os.environ.get('BRANCH'))
 
-MOCK_EVENTS = [Event('Rollerblading Tour of Central Park', 2018, 3, 20, 'Join this fun NYC tour and get some exercise!'),
-                Event('Rollerblading Tour of Central Park Round 2', 2018, 3, 22, 'Join this fun NYC tour and get some exercise again!')]
+# MOCK_EVENTS = [Event('Rollerblading Tour of Central Park', 2018, 3, 20, 'Join this fun NYC tour and get some exercise!'),
+                # Event('Rollerblading Tour of Central Park Round 2', 2018, 3, 22, 'Join this fun NYC tour and get some exercise again!')]
 
 api = Api(app)
 randomKey= '472389hewhuw873dsa4245193ej23yfehw'
@@ -241,6 +242,7 @@ def recommend():
     events = rec.get_events()
     print (len(events))
 
+
     if len(events) > 50:
         events = events[0:50]
 
@@ -263,11 +265,10 @@ def helper_strip_date(e):
             e = list(e)
             e[idx] = x.strftime('%B %d %I:%M %p')
             e = tuple(e)
-        if type(x) is str:
-            e = list(e)
-            print x
-            e[idx] = x.decode('utf-8')
-            e = tuple(e)
+        # if type(x) is str:
+        #     e = list(e)
+        #     e[idx] = x.decode('utf-8')
+        #     e = tuple(e)
     return e
 
 
@@ -534,6 +535,19 @@ class RespondToRequest(Resource):
         db.close()
         return {}, 200
 api.add_resource(RespondToRequest, '/api/respond_to_request/<string:group_name>/<string:response>')
+
+class GetEventRecs(Resource):
+    def get(self):
+        rec = recommender.Recommend(current_user)
+        events = rec.get_events()
+        for event_index, e in enumerate(events):
+            events[event_index] = helper_strip_date(e)
+        response = []
+        for e in events:
+            e = Event(*e)
+            response.append(e.toJSON())
+        return response
+api.add_resource(GetEventRecs, '/api/get_event_recs')
 
 
 @app.route('/profile/<string:username>')

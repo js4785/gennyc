@@ -12,17 +12,26 @@
             <input type="text" placeholder="Search for an event" id="search" name="search" required/>
         </div>
     </form>
+    <ul class="pagination">
+      <li class="waves-effect"><a onclick="left()" href="#!"><i class="material-icons">chevron_left</i></a></li>
+      <li class="waves-effect"><a onclick="right()" href="#!"><i class="material-icons">chevron_right</i></a></li>
+    </ul>
+    <div id="rec_container"></div>
+    <ul class="pagination">
+      <li class="waves-effect"><a onclick="left()" href="#!"><i class="material-icons">chevron_left</i></a></li>
+      <li class="waves-effect"><a onclick="right()" href="#!"><i class="material-icons">chevron_right</i></a></li>
+    </ul>
 
-    {% for interest in survey_results %}
+
+    <!-- {% for interest in survey_results %} -->
       <!--<h6>You seem to like <span class="interest">{{ interest }}</span></h6>-->
 
     <!--<h6>Events that have to do with <span class="interest">{{ interest }}:</span></h6>-->
-    <br>
-
-      {% for eid, ename, description, start_date, end_date, num_cap, num_attending, lname, address_1, tag, lat, lon in events %}
+      <!-- {% for eid, ename, description, start_date, end_date, num_cap, num_attending, lname, address_1, tag, lat, lon in events[:20] %}
       {% if tag == interest %}
+      <br> -->
 
-      <div class="card horizontal">
+      <!-- <div class="card horizontal">
         <div class="card-image">
           <img src="../static/img/{{ interest }}.jpg">
         </div>
@@ -31,7 +40,7 @@
             <ul>
               <li><h6> {{start_date}} to {{end_date}}</h6></li>
               <li><h6><a href="#{ename}" id="unique-link">{{ename}}</a></h6></li>
-              <!-- <li>{{num_attending}}/{{num_cap}} filled</li> -->
+              <li>{{num_attending}}/{{num_cap}} filled</li>
             </ul>
             <div id="recommendations" style="color: darkgrey; float: right;">Because you chose
                 <span class="interest">{{ interest }}</span>
@@ -80,11 +89,100 @@
         }
 
       });
+
       </script>
       {% endif %}
       {% endfor %}
 
-    {% endfor %}
+    {% endfor %} -->
+
+    <script>
+    cur_p = 0
+    events = []
+    function createRows(page) {
+      var container = document.getElementById('rec_container')
+      container.innerHTML = ''
+      var result = ''
+      var cur = page * 10;
+      while (cur < page*10+10) {
+        var event = JSON.parse(events[cur])
+        container.innerHTML += ('<br> \
+        <div class="card horizontal"> \
+          <div class="card-image"> \
+            <img src="../static/img/' + event.tag + '.jpg"> \
+          </div> \
+          <div class="card-stacked"> \
+            <div class="card-content"> \
+              <ul> \
+                <li><h6> '+event.start_date+' to '+event.end_date+'</h6></li> \
+                <li><h6><a href="#'+event.ename+'" id="unique-link">'+ event.ename +'</a></h6></li> \
+              </ul> \
+              <div id="recommendations" style="color: darkgrey; float: right;">Because you chose \
+                  <span class="interest">'+event.tag+'</span> \
+            </div> \
+            </div> \
+            <div class="card-action"> \
+              <a class="button modal-trigger" href="#map" data-latLng="'+event.lat+', '+event.lon+'">Address: '+event.address_1+'</a> \
+            </div> \
+          </div> \
+        </div>')
+
+        // container.innerHTML += ('<div id="map" class="modal"> \
+        //   <div class="modal-content"> \
+        //     <h4>'+event.lname+'</h4> \
+        //     <p>'+event.address_1+'</p> \
+        //                           \
+        //     <iframe class="map" \
+        //               width="100%" \
+        //               height="450px" \
+        //               frameborder="0" \
+        //               style="border:0"> \
+        //     </iframe> \
+        //   </div> \
+        //   <div class="modal-footer"> \
+        //     <a href="#!" class="modal-action modal-close waves-effect waves-green btn-flat">Close</a> \
+        //   </div> \
+        // </div>')
+        //
+        // container.innerHTML += ('<script type="text/javascript">$(document).ready(function(){}).on("click", ".button", function(e)\
+        //                         {e.preventDefault();var latln = jQuery(this).attr("data-latLng");console.log(latln);initialize(latln);\
+        //                         function initialize(latln) { var num = Number(latln);console.log(num);') +
+        //                         "$('.map').attr('src','https://www.google.com/maps/embed/v1/place?key=AIzaSyDqQfmy2tRlFybt3yggtXeWbrKRLO91amA&q="+event.lat+","+event.lon+"'); }});\</script\>"
+        cur += 1
+      }
+      return result
+    }
+
+    function getEvents(page) {
+      var xmlHttp = new XMLHttpRequest();
+      var url = 'api/get_event_recs'
+      xmlHttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+          events = JSON.parse(this.response)
+          console.log(events)
+          createRows(page)
+        }
+      };
+      xmlHttp.open('GET', url, true)
+      xmlHttp.setRequestHeader('Content-Type', 'text/plain')
+      xmlHttp.send();
+
+    }
+
+    function left() {
+      if (cur_p == 0) return;
+      cur_p -=1
+      getEvents(cur_p)
+    }
+
+    function right() {
+      if (cur_p >= events.length/10) return;
+      cur_p +=1
+      getEvents(cur_p)
+    }
+
+    getEvents(cur_p)
+    </script>
   </div>
 </div>
 

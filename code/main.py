@@ -265,10 +265,10 @@ def helper_strip_date(e):
             e = list(e)
             e[idx] = x.strftime('%B %d %I:%M %p')
             e = tuple(e)
-        # if type(x) is str:
-        #     e = list(e)
-        #     e[idx] = x.decode('utf-8')
-        #     e = tuple(e)
+        if type(x) is str:
+            e = list(e)
+            e[idx] = unicode(x, errors='ignore')
+            e = tuple(e)
     return e
 
 

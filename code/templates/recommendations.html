@@ -14,6 +14,7 @@
     </form>
     <ul class="pagination">
       <li class="waves-effect"><a onclick="left()" href="#!"><i class="material-icons">chevron_left</i></a></li>
+      <li><a id="cur_page"></a></li>
       <li class="waves-effect"><a onclick="right()" href="#!"><i class="material-icons">chevron_right</i></a></li>
     </ul>
     <div id="rec_container"></div>
@@ -153,14 +154,15 @@
       return result
     }
 
-    function getEvents(page) {
+    function getEvents() {
       var xmlHttp = new XMLHttpRequest();
       var url = 'api/get_event_recs'
       xmlHttp.onreadystatechange = function() {
         if (this.readyState == 4 && this.status == 200) {
           events = JSON.parse(this.response)
-          console.log(events)
-          createRows(page)
+          // console.log(events)
+          createRows(cur_p)
+          showPageNum()
         }
       };
       xmlHttp.open('GET', url, true)
@@ -169,19 +171,26 @@
 
     }
 
+    function showPageNum() {
+      var page_num = document.getElementById('cur_page')
+      page_num.innerHTML = (cur_p+1) + ' / ' + (Math.ceil(events.length/10))
+    }
+
     function left() {
       if (cur_p == 0) return;
       cur_p -=1
-      getEvents(cur_p)
+      createRows(cur_p)
+      showPageNum()
     }
 
     function right() {
-      if (cur_p >= events.length/10) return;
+      if (cur_p >= events.length/10 - 1) return;
       cur_p +=1
-      getEvents(cur_p)
+      createRows(cur_p)
+      showPageNum()
     }
 
-    getEvents(cur_p)
+    getEvents()
     </script>
   </div>
 </div>

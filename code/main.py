@@ -240,7 +240,8 @@ def recommend():
     rec = recommender.Recommend(current_user)
     # interests = rec.get_user_interests()
     events = rec.get_events()
-    print (len(events))
+
+    print (events)
 
 
     if len(events) > 50:
@@ -399,25 +400,6 @@ def confirm(key, username):
 
     return redirect(url_for('login'))
 
-# @app.route('/test_email')
-# def test_email():
-#     sender  = 'genNYC <support@{}.appspotmail.com>'.format(app_identity.get_application_id())
-#     email = 'kss2153@columbia.edu'
-#     confirm_url = 'google.com'
-#     jinja_environment = jinja2.Environment(
-#         loader=jinja2.FileSystemLoader(os.path.dirname(__file__)))
-#     template = jinja_environment.get_template('templates/email_template.html')
-#     email_body = template.render({'confirm_url': confirm_url})
-#
-#     message = mail.EmailMessage(
-#         sender = email,
-#         to = email,
-#         subject = 'Please confirm your subscription to Mailing-List XYZ',
-#         html = email_body)
-#
-#     message.send()
-#     return 'OK'
-
 def get_group_names(user):
     db = connect_to_cloudsql()
     cursor = db.cursor()
@@ -431,26 +413,38 @@ def get_group_names(user):
 def get_group_members(group_name):
     db = connect_to_cloudsql()
     cursor = db.cursor()
-    query = ("SELECT username from " + ENV_DB + ".Groups WHERE groupName='{}'").format(group_name)
+    query = ("SELECT username, creator, gid from " + ENV_DB + ".Groups WHERE groupName='{}'").format(group_name)
     cursor.execute(query)
     data = cursor.fetchall()
     db.close()
-    return list(i[0] for i in data)
+    return list(list((i[0], i[1], int(i[2]))) for i in data)
 
-def add_group(group_name, users):
+def add_group(group_name, users, new):
     db = connect_to_cloudsql()
-    users.append(current_user.username)
+    g_id = 0
+    cursor = db.cursor()
+    cursor.execute('SELECT max(gid) from ' + ENV_DB + '.Groups')
+    data = cursor.fetchone()
+    print (data)
+    if data[0]:
+        g_id = int(data[0])
+
+    print g_id
+    if new:
+        g_id += 1
+        users.append(current_user.username)
+
     for user in users:
-        cursor = db.cursor()
+        creator = 0
         status = '2'
         if (user == current_user.username):
             status = '1'
-        query = ("INSERT INTO " + ENV_DB + ".Groups(groupName, username, status) \
-        VALUES ('{}','{}','{}')").format(group_name, user, status)
+            creator = 1
+        query = ("INSERT INTO " + ENV_DB + ".Groups(gid, groupName, username, status, creator) \
+        VALUES ('{}','{}','{}','{}','{}')").format(g_id, group_name, user, status, creator)
         cursor.execute(query)
     db.commit()
     db.close()
-
 
 @app.route('/groups')
 @login_required
@@ -464,15 +458,21 @@ def group():
             accepted[group_name] = members
         elif (status == '2'):
             pending[group_name] = members
-    return render_template("group.html", pending=pending, accepted=accepted)
+    print (pending)
+    print (accepted)
+    username = current_user.username
+    return render_template("group.html", pending=pending, accepted=accepted, user=username)
 
 class CreateGroup(Resource):
-    def put(self, groupname):
+    def put(self, groupname, new_flag):
         users = request.args.getlist('users')
-        add_group(groupname, users)
+        new = True
+        if new_flag != 'true':
+            new = False
+        add_group(groupname, users, new)
         return {}, 200
 
-api.add_resource(CreateGroup, '/api/new_group/<string:groupname>')
+api.add_resource(CreateGroup, '/api/new_group/<string:groupname>/<string:new_flag>')
 
 class CheckValidUser(Resource):
     def get(self, username):
@@ -513,7 +513,7 @@ class CheckValidGroupName(Resource):
             return {}, 201
         db = connect_to_cloudsql()
         cursor = db.cursor()
-        cursor.execute("SELECT * FROM " + ENV_DB + ".Groups WHERE groupName='" + group_name + "'")
+        cursor.execute("SELECT * FROM " + ENV_DB + ".Groups WHERE groupName='" + group_name + "' AND username='" + current_user.username + "'")
         data = cursor.fetchone()
         db.close()
         if (data):

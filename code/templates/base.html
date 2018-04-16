@@ -42,10 +42,11 @@
         <ul class="right hide-on-med-and-down">
           {% if current_user.is_authenticated() %}
           <li><a href="/home">Home</a></li>
-          <li><a href="recommendations">Recommendations</a></li>
-          <li><a href="create_event">Create New Event</a></li>
-          <li><a href="survey">Interest Survey</a></li>
-          <li><a href="logout">Logout</a></li>
+          <li><a href="/recommendations">Recommendations</a></li>
+          <li><a href="/groups">My Groups</a></li>
+          <li><a href="/create_event">Create New Event</a></li>
+          <li><a href="/survey">Interest Survey</a></li>
+          <li><a href="/logout">Logout</a></li>
           {% else %}
           <li><a href="/">Home</a></li>
           {% endif %}

@@ -3,6 +3,9 @@
 {% block body %}
 
 <div class="container">
+  <div id="loading" style="visibility:hidden" class="progress">
+      <div class="indeterminate"></div>
+  </div>
   {% if accepted|length > 0 %}
   <div class="section">
     <h5>Your Groups</h5>
@@ -12,10 +15,20 @@
         <div class="card">
           <div class="card-content">
             <span class="card-title"><a href="#" onclick='showGroup("{{group}}", "{{accepted[group]}}")'>{{group}}</a></span>
-            <p></p>
+            <p>
+              {% for username, creator, gid in accepted[group] %}
+                {% if creator == 1 and username != user %}
+                  made by <a href="/profile/{{username}}">{{username}}</a>
+                {% endif %}
+              {% endfor %}
+            </p>
           </div>
           <div class="card-action">
-            <a onclick="cur_group='{{group}}';newEditModal()" href="#modal2" class="modal-trigger">Add users</a>
+            {% for member, creator, gid in accepted[group]  %}
+            {% if  member == user and creator == 1%}
+              <a onclick="cur_group='{{group}}';newEditModal()" href="#modal2" class="modal-trigger">Add users</a>
+            {% endif %}
+            {% endfor %}
             <a href="#">See recommendations</a>
           </div>
         </div>
@@ -179,6 +192,7 @@
 
 
     function addGroup() {
+      var loader = document.getElementById('loading')
       var groupName = document.getElementById('groupname_ng')
       var xmlHttp = new XMLHttpRequest();
       var url = 'api/new_group/' + String(groupName.value) + '/true?'
@@ -189,7 +203,9 @@
       console.log(url)
       xmlHttp.onreadystatechange = function() {
         if (this.readyState == 4 && this.status == 200) {
-           window.location.href = '/groups'
+          loader.style.visibility = 'visible'
+          window.location.href = '/groups'
+
         }
       };
       xmlHttp.open('PUT', url, true)

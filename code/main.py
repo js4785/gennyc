@@ -241,13 +241,14 @@ def recommend():
     show_group = False
     group_id = -1
     g_id = request.args.get('group')
-    if g_id is None:
-        print ('no g id')
-    else:
+    name = ''
+    if g_id is not None:
         group_id = g_id
         show_group = True
+        name = get_group_by_id(g_id)
+    print (name)
 
-    return render_template("recommendations.html", g_id=group_id, show_group=show_group)
+    return render_template("recommendations.html", g_id=group_id, name=name)
 
 
 def helper_strip_date(e):
@@ -389,6 +390,15 @@ def confirm(key, username):
     logout_user()
 
     return redirect(url_for('login'))
+
+def get_group_by_id(gid):
+    db = connect_to_cloudsql()
+    cursor = db.cursor()
+    query = "SELECT groupName from " + ENV_DB + ".Groups WHERE gid='" + gid + "'"
+    cursor.execute(query)
+    data = cursor.fetchone()
+    db.close()
+    return data[0]
 
 def get_group_names(user):
     db = connect_to_cloudsql()
@@ -549,6 +559,13 @@ class GetGroupEventRecs(Resource):
             response.append(e.toJSON())
         return response
 api.add_resource(GetGroupEventRecs, '/api/get_group_event_recs/<string:group_id>')
+
+class GetGroupInterests(Resource):
+    def get(self, group_id):
+        rec = recommender.GroupRecommend(group_id)
+        response = rec.get_group_interests()
+        return response
+api.add_resource(GetGroupInterests, '/api/get_group_interests/<string:group_id>')
 
 
 @app.route('/profile/<string:username>')

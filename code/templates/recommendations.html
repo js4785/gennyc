@@ -5,6 +5,9 @@
   <div class="col s12">
 
     <h3 class="recommendations-header">Find your next experience.</h3>
+      {% if name != '' %}
+      <h6>Showing results for  <span class="interest">{{name}}</span></h6><br>
+      {% endif %}
       <h6 style="font-weight: bold;"><a onclick="openFilters()" href="#">Filters</a></h6><br>
 
     <!-- <form action="/search" method="POST">
@@ -12,6 +15,9 @@
             <input type="text" placeholder="Search for an event" id="search" name="search" required/>
         </div>
     </form> -->
+    <div id="loading" style="visibility:visible" class="progress">
+        <div class="indeterminate"></div>
+    </div>
     <ul class="pagination">
       <li class="waves-effect"><a onclick="left()" href="#!"><i class="material-icons">chevron_left</i></a></li>
       <li><a id="cur_page"></a></li>
@@ -22,8 +28,6 @@
       <li class="waves-effect"><a onclick="left()" href="#!"><i class="material-icons">chevron_left</i></a></li>
       <li class="waves-effect"><a onclick="right()" href="#!"><i class="material-icons">chevron_right</i></a></li>
     </ul>
-
-
 
     <div id="filter_modal" class="modal filter">
       <div class="modal-content">
@@ -210,6 +214,9 @@
           addTagFilters()
           filter()
           showData()
+
+          var loader = document.getElementById('loading')
+          loader.style.visibility = 'hidden'
         }
       };
       xmlHttp.open('GET', url, true)

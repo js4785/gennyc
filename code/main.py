@@ -225,6 +225,7 @@ def home():
 
 
 @app.route('/explore')
+@login_required
 def explore_events():
 
     return render_template("explore.html")

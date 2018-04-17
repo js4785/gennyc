@@ -133,6 +133,14 @@ form {
   }
 }
 
+.modal#map {
+  overflow-y: visible !important;
+
+  .modal-content {
+    background: white;
+  }
+}
+
 .mdl-modal {
   background-color: #ffffffe8;
   width: 70%;

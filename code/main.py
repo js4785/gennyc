@@ -237,27 +237,17 @@ def recommend():
         return redirect('verify')
     if not user_is_tagged(current_user):
         return redirect('survey')
-    rec = recommender.Recommend(current_user)
-    # interests = rec.get_user_interests()
-    events = rec.get_events()
 
-    print (events)
+    show_group = False
+    group_id = -1
+    g_id = request.args.get('group')
+    if g_id is None:
+        print ('no g id')
+    else:
+        group_id = g_id
+        show_group = True
 
-
-    if len(events) > 50:
-        events = events[0:50]
-
-    # Create set of interests
-    interests = set()
-    for e in events:
-        #  Extract interets from Event entity (assuming last attribute)
-        interests.add(e[-3])
-
-    for event_index, e in enumerate(events):
-
-        events[event_index] = helper_strip_date(e)
-
-    return render_template("recommendations.html", survey_results=list(interests), events=events)
+    return render_template("recommendations.html", g_id=group_id, show_group=show_group)
 
 
 def helper_strip_date(e):
@@ -548,6 +538,19 @@ class GetEventRecs(Resource):
             response.append(e.toJSON())
         return response
 api.add_resource(GetEventRecs, '/api/get_event_recs')
+
+class GetGroupEventRecs(Resource):
+    def get(self, group_id):
+        rec = recommender.GroupRecommend(group_id)
+        events = rec.get_events()
+        for event_index, e in enumerate(events):
+            events[event_index] = helper_strip_date(e)
+        response = []
+        for e in events:
+            e = Event(*e)
+            response.append(e.toJSON())
+        return response
+api.add_resource(GetGroupEventRecs, '/api/get_group_event_recs/<string:group_id>')
 
 
 @app.route('/profile/<string:username>')

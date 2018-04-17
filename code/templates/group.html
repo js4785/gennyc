@@ -29,7 +29,7 @@
               <a onclick="cur_group='{{group}}';newEditModal()" href="#modal2" class="modal-trigger">Add users</a>
             {% endif %}
             {% endfor %}
-            <a href="#">See recommendations</a>
+            <a href="/recommendations?group={{accepted[group][0][2]}}">See recommendations</a>
           </div>
         </div>
       </div>
@@ -352,7 +352,6 @@
 
 
     }
-
 
   </script>
 

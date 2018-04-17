@@ -29,7 +29,7 @@
               <a onclick="cur_group='{{group}}';newEditModal()" href="#modal2" class="modal-trigger">Add users</a>
             {% endif %}
             {% endfor %}
-            <a href="#">See recommendations</a>
+            <a href="/recommendations?group={{accepted[group][0][2]}}">See recommendations</a>
           </div>
         </div>
       </div>
@@ -78,8 +78,14 @@
   <div id="modal3" class="modal group_info">
     <div class="modal-content">
       <h4 id="group_name_modal">Name</h4>
-      <!-- <h4>Members:</h4> -->
+      <h6>Members:</h6>
       <div id="members_container"></div>
+      <br>
+      <h6>Common Interests:</h6>
+      <div id="loading_ints" style="visibility:visible" class="progress">
+          <div class="indeterminate"></div>
+      </div>
+      <div class="row" id="interests_container"></div>
     </div>
   </div>
 
@@ -334,6 +340,8 @@
     }
 
     function showGroup(group_name, members) {
+      interest_loader = document.getElementById('loading_ints')
+      interest_loader.style.visibility = 'visible'
       members = members.replace(/'/g, '"');
       mem_list = JSON.parse(members)
       var title = document.getElementById('group_name_modal')
@@ -345,14 +353,30 @@
         member = tuple[0]
         list_container.innerHTML += ('<a href="/profile/'+member+'">'+member+'</a><br>')
       }
+      int_container = document.getElementById('interests_container')
+
+      var xmlHttp = new XMLHttpRequest();
+      var url = 'api/get_group_interests/' + mem_list[0][2]
+      xmlHttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+           console.log(this.response)
+           var ints = JSON.parse(this.response)
+           int_container.innerHTML = ''
+           for (var i = 0; i < ints.length; i++) {
+             console.log(ints[i])
+             int_container.innerHTML += '<div style="padding:10px" class="col s3"><span class="interest">' + ints[i] + '</span></div>'
+           }
+           interest_loader.style.visibility = 'hidden'
+        }
+      };
+      xmlHttp.open('GET', url, true)
+      xmlHttp.setRequestHeader('Content-Type', 'text/plain')
+      xmlHttp.send();
 
       var elem = document.querySelector('.modal.group_info')
       var modal = M.Modal.getInstance(elem)
       modal.open()
-
-
     }
-
 
   </script>
 

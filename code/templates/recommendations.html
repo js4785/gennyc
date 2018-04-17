@@ -145,207 +145,208 @@
     <script type="text/javascript">
     $(document).ready(function() {
       $('.modal').modal()
-
-      day_range = document.getElementById('day_range')
-      cur_filter = {days: 7, tags: []}
-
-      tag_set = new Set()
-      cur_p = 0
-      events = []
-      all_events = []
-
-      url = new URL(window.location.href);
-      group = url.searchParams.get("group");
-
-      function createRows(page) {
-        var container = document.getElementById('rec_container')
-        container.innerHTML = ''
-        var result = ''
-        var cur = page * 10;
-        while (cur < page*10+10) {
-        var event = events[cur]
-        if (event == null) break;
-        container.innerHTML += ('<br> \
-        <div class="card horizontal"> \
-          <div class="card-image"> \
-            <img src="../static/img/' + event.tag + '.jpg"> \
-          </div> \
-          <div class="card-stacked"> \
-            <div class="card-content"> \
-              <ul> \
-                <li><h6> '+event.start_date+' to '+event.end_date+'</h6></li> \
-                <li><h6><a href="#'+event.ename+'" id="unique-link">'+ event.ename +'</a></h6></li> \
-              </ul> \
-              <div id="recommendations" style="color: darkgrey; float: right;">Because you chose \
-                  <span class="interest">'+event.tag+'</span> \
-            </div> \
-            </div> \
-            <div class="card-action"> \
-              <a class="button modal-trigger" href="#map" data-latLng="'+event.lon+', '+event.lat+'">Address: '+event.address_1+'</a> \
-            </div> \
-          </div> \
-        </div>')
-
-          cur += 1
-        }
-        return result
-      }
-
-      function getEvents() {
-        var xmlHttp = new XMLHttpRequest();
-
-        var url = 'api/get_event_recs'
-        if (group != null) {
-          url = 'api/get_group_event_recs/' + group
-        }
-
-        xmlHttp.onreadystatechange = function() {
-          if (this.readyState == 4 && this.status == 200) {
-            all_events = JSON.parse(this.response)
-            for (var i = 0; i < all_events.length; i++) {
-              all_events[i] = JSON.parse(all_events[i])
-              tag_set.add(all_events[i].tag)
-            }
-            addTagFilters()
-            filter()
-            showData()
-
-            var loader = document.getElementById('loading')
-            loader.style.visibility = 'hidden'
-          }
-        };
-        xmlHttp.open('GET', url, true)
-        xmlHttp.setRequestHeader('Content-Type', 'text/plain')
-        xmlHttp.send();
-
-      }
-
-      function addTagFilters() {
-        var tag_filters = document.getElementById('tag_filters')
-        tag_filters.innerHTML = ''
-        var tag_arr = Array.from(tag_set)
-        // tag_filters.innerHTML += '<div class="row">'
-        for (var i = 0; i < tag_arr.length; i++) {
-          // if (i % 3 == 0 && i !=0) tag_filters.innerHTML += '</div>'
-          // if (i % 3 == 0 && i !=0) tag_filters.innerHTML += '<div class="row">'
-          tag_filters.innerHTML += '<div class="col s3"><label><input id="'+tag_arr[i]+'" class="tagf" type="checkbox" checked="checked" /><span>'+tag_arr[i]+'</span></label></div>'
-        }
-        // tag_filters.innerHTML += '</div>'
-      }
-
-      function showPageNum() {
-        var page_num = document.getElementById('cur_page')
-        page_num.innerHTML = (cur_p+1) + ' / ' + (Math.ceil(events.length/10))
-      }
-
-      function left() {
-        if (cur_p == 0) return;
-        cur_p -=1
-        createRows(cur_p)
-        showPageNum()
-      }
-
-      function right() {
-        if (cur_p >= events.length/10 - 1) return;
-        cur_p +=1
-        createRows(cur_p)
-        showPageNum()
-      }
-
-      function openFilters() {
-        var elem = document.querySelector('.modal.filter')
-        var modal = M.Modal.getInstance(elem)
-
-        day_range.value = cur_filter.days
-        document.getElementById('range_value').textContent = day_range.value + ' days from now'
-
-        var tag_checks = document.getElementsByClassName('tagf')
-        for (var i = 0; i < tag_checks.length; i++) {
-          if (!cur_filter.tags.includes(tag_checks[i].id)) {
-            tag_checks[i].checked = true
-          }
-        }
-
-
-        modal.open()
-      }
-
-      function applyFilters() {
-        cur_filter.days = day_range.value
-        applyTagFilter()
-
-
-        filter()
-        showData()
-        closeFilters()
-      }
-
-      function applyTagFilter() {
-        filtered_tags = []
-        var tag_checks = document.getElementsByClassName('tagf')
-        for (var i = 0; i < tag_checks.length; i++) {
-          if (!tag_checks[i].checked) {
-            filtered_tags.push(tag_checks[i].id)
-          }
-        }
-        cur_filter.tags = filtered_tags
-      }
-
-      function filter() {
-        events = filterNumDays(cur_filter.days, all_events)
-        events = filterTags(cur_filter.tags, events)
-      }
-
-      function showData() {
-        cur_p = 0
-        createRows(cur_p)
-        showPageNum()
-      }
-
-      function closeFilters() {
-        var elem = document.querySelector('.modal.filter')
-        var modal = M.Modal.getInstance(elem)
-        modal.close()
-      }
-
-      function filterNumDays(days, event_list) {
-        var ms = days * 86400000
-        var today = new Date()
-        var result = []
-        for (var i = 0; i < event_list.length; i++) {
-          var e = event_list[i]
-          var e_date = new Date(today.getFullYear() + e.start_date)
-          var diff_ms = (e_date - today)
-          if (diff_ms < ms && diff_ms > 0) {
-            result.push(event_list[i])
-          }
-        }
-        return result
-      }
-
-      function filterTags(tags, event_list) {
-        var result = []
-        for (var i = 0; i < event_list.length; i++) {
-          if (!tags.includes(event_list[i].tag))  {
-            result.push(event_list[i])
-          }
-        }
-        return result
-      }
-
-      function selectAllTags(checked) {
-        var tag_checks = document.getElementsByClassName('tagf')
-        for (var i = 0; i < tag_checks.length; i++) {
-          tag_checks[i].checked = checked
-        }
-      }
-
-      getEvents()
-
-      day_range.addEventListener("change", function() {
-          document.getElementById("range_value").textContent = day_range.value + ' days from now';
-      }, false);
     })
+
+    day_range = document.getElementById('day_range')
+    cur_filter = {days: 7, tags: []}
+
+    tag_set = new Set()
+    cur_p = 0
+    events = []
+    all_events = []
+
+    url = new URL(window.location.href);
+    group = url.searchParams.get("group");
+
+    function createRows(page) {
+      var container = document.getElementById('rec_container')
+      container.innerHTML = ''
+      var result = ''
+      var cur = page * 10;
+      while (cur < page*10+10) {
+      var event = events[cur]
+      if (event == null) break;
+      container.innerHTML += ('<br> \
+      <div class="card horizontal"> \
+        <div class="card-image"> \
+          <img src="../static/img/' + event.tag + '.jpg"> \
+        </div> \
+        <div class="card-stacked"> \
+          <div class="card-content"> \
+            <ul> \
+              <li><h6> '+event.start_date+' to '+event.end_date+'</h6></li> \
+              <li><h6><a href="#'+event.ename+'" id="unique-link">'+ event.ename +'</a></h6></li> \
+            </ul> \
+            <div id="recommendations" style="color: darkgrey; float: right;">Because you chose \
+                <span class="interest">'+event.tag+'</span> \
+          </div> \
+          </div> \
+          <div class="card-action"> \
+            <a class="button modal-trigger" href="#map" data-latLng="'+event.lon+', '+event.lat+'">Address: '+event.address_1+'</a> \
+          </div> \
+        </div> \
+      </div>')
+
+        cur += 1
+      }
+      return result
+    }
+
+    function getEvents() {
+      var xmlHttp = new XMLHttpRequest();
+
+      var url = 'api/get_event_recs'
+      if (group != null) {
+        url = 'api/get_group_event_recs/' + group
+      }
+
+      xmlHttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+          all_events = JSON.parse(this.response)
+          for (var i = 0; i < all_events.length; i++) {
+            all_events[i] = JSON.parse(all_events[i])
+            tag_set.add(all_events[i].tag)
+          }
+          addTagFilters()
+          filter()
+          showData()
+
+          var loader = document.getElementById('loading')
+          loader.style.visibility = 'hidden'
+        }
+      };
+      xmlHttp.open('GET', url, true)
+      xmlHttp.setRequestHeader('Content-Type', 'text/plain')
+      xmlHttp.send();
+
+    }
+
+    function addTagFilters() {
+      var tag_filters = document.getElementById('tag_filters')
+      tag_filters.innerHTML = ''
+      var tag_arr = Array.from(tag_set)
+      // tag_filters.innerHTML += '<div class="row">'
+      for (var i = 0; i < tag_arr.length; i++) {
+        // if (i % 3 == 0 && i !=0) tag_filters.innerHTML += '</div>'
+        // if (i % 3 == 0 && i !=0) tag_filters.innerHTML += '<div class="row">'
+        tag_filters.innerHTML += '<div class="col s3"><label><input id="'+tag_arr[i]+'" class="tagf" type="checkbox" checked="checked" /><span>'+tag_arr[i]+'</span></label></div>'
+      }
+      // tag_filters.innerHTML += '</div>'
+    }
+
+    function showPageNum() {
+      var page_num = document.getElementById('cur_page')
+      page_num.innerHTML = (cur_p+1) + ' / ' + (Math.ceil(events.length/10))
+    }
+
+    function left() {
+      if (cur_p == 0) return;
+      cur_p -=1
+      createRows(cur_p)
+      showPageNum()
+    }
+
+    function right() {
+      if (cur_p >= events.length/10 - 1) return;
+      cur_p +=1
+      createRows(cur_p)
+      showPageNum()
+    }
+
+    function openFilters() {
+      var elem = document.querySelector('.modal.filter')
+      var modal = M.Modal.getInstance(elem)
+
+      day_range.value = cur_filter.days
+      document.getElementById('range_value').textContent = day_range.value + ' days from now'
+
+      var tag_checks = document.getElementsByClassName('tagf')
+      for (var i = 0; i < tag_checks.length; i++) {
+        if (!cur_filter.tags.includes(tag_checks[i].id)) {
+          tag_checks[i].checked = true
+        }
+      }
+
+
+      modal.open()
+    }
+
+    function applyFilters() {
+      cur_filter.days = day_range.value
+      applyTagFilter()
+
+
+      filter()
+      showData()
+      closeFilters()
+    }
+
+    function applyTagFilter() {
+      filtered_tags = []
+      var tag_checks = document.getElementsByClassName('tagf')
+      for (var i = 0; i < tag_checks.length; i++) {
+        if (!tag_checks[i].checked) {
+          filtered_tags.push(tag_checks[i].id)
+        }
+      }
+      cur_filter.tags = filtered_tags
+    }
+
+    function filter() {
+      events = filterNumDays(cur_filter.days, all_events)
+      events = filterTags(cur_filter.tags, events)
+    }
+
+    function showData() {
+      cur_p = 0
+      createRows(cur_p)
+      showPageNum()
+    }
+
+    function closeFilters() {
+      var elem = document.querySelector('.modal.filter')
+      var modal = M.Modal.getInstance(elem)
+      modal.close()
+    }
+
+    function filterNumDays(days, event_list) {
+      var ms = days * 86400000
+      var today = new Date()
+      var result = []
+      for (var i = 0; i < event_list.length; i++) {
+        var e = event_list[i]
+        var e_date = new Date(today.getFullYear() + e.start_date)
+        var diff_ms = (e_date - today)
+        if (diff_ms < ms && diff_ms > 0) {
+          result.push(event_list[i])
+        }
+      }
+      return result
+    }
+
+    function filterTags(tags, event_list) {
+      var result = []
+      for (var i = 0; i < event_list.length; i++) {
+        if (!tags.includes(event_list[i].tag))  {
+          result.push(event_list[i])
+        }
+      }
+      return result
+    }
+
+    function selectAllTags(checked) {
+      var tag_checks = document.getElementsByClassName('tagf')
+      for (var i = 0; i < tag_checks.length; i++) {
+        tag_checks[i].checked = checked
+      }
+    }
+
+    getEvents()
+
+    day_range.addEventListener("change", function() {
+        document.getElementById("range_value").textContent = day_range.value + ' days from now';
+    }, false);
+
     </script>
 
     <!-- Script for map modal -->

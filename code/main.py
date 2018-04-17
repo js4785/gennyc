@@ -448,8 +448,6 @@ def group():
             accepted[group_name] = members
         elif (status == '2'):
             pending[group_name] = members
-    print (pending)
-    print (accepted)
     username = current_user.username
     return render_template("group.html", pending=pending, accepted=accepted, user=username)
 

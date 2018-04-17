@@ -31,27 +31,14 @@ CLOUDSQL_CONNECTION_NAME = os.environ.get('CLOUDSQL_CONNECTION_NAME')
 CLOUDSQL_USER = os.environ.get('CLOUDSQL_USER')
 CLOUDSQL_PASSWORD = os.environ.get('CLOUDSQL_PASSWORD')
 
-# CLOUDSQL_CONNECTION_NAME = "gennyc-dev:us-central1:mysqldev"
-# CLOUDSQL_USER = "kayvon"
-# CLOUDSQL_PASSWORD = "kayvon"
 
 DB_HOST_DEV = '35.193.223.145'
 # DB_HOST_DEV = "127.0.0.1" # Using for local setup
 
-# ENV = ''
-# if os.environ.get('BRANCH') != 'master':
-#     ENV = 'Dev'
-# else:
-#     ENV = 'Uat'
-#     CLOUDSQL_CONNECTION_NAME = 'gennyc-uat:us-central1:mysqluat'
-#
 
 
 ENV_DB = 'Dev'
 # print (os.environ.get('BRANCH'))
-
-MOCK_EVENTS = [Event('Rollerblading Tour of Central Park', 2018, 3, 20, 'Join this fun NYC tour and get some exercise!'),
-                Event('Rollerblading Tour of Central Park Round 2', 2018, 3, 22, 'Join this fun NYC tour and get some exercise again!')]
 
 api = Api(app)
 randomKey= '472389hewhuw873dsa4245193ej23yfehw'

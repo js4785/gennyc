@@ -568,6 +568,10 @@ class GetGroupInterests(Resource):
         return response
 api.add_resource(GetGroupInterests, '/api/get_group_interests/<string:group_id>')
 
+@app.route('/profile')
+@login_required
+def profile_home():
+    return redirect('/profile/' + current_user.username)
 
 @app.route('/profile/<string:username>')
 @login_required

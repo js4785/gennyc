@@ -26,6 +26,7 @@ import datetime
 import jinja2
 
 
+
 # These environment variables are configured in app.yaml.
 CLOUDSQL_CONNECTION_NAME = os.environ.get('CLOUDSQL_CONNECTION_NAME')
 CLOUDSQL_USER = os.environ.get('CLOUDSQL_USER')

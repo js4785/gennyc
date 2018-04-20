@@ -354,6 +354,7 @@
         list_container.innerHTML += ('<a href="/profile/'+member+'">'+member+'</a><br>')
       }
       int_container = document.getElementById('interests_container')
+      int_container.innerHTML = ''
 
       var xmlHttp = new XMLHttpRequest();
       var url = 'api/get_group_interests/' + mem_list[0][2]
@@ -361,7 +362,6 @@
         if (this.readyState == 4 && this.status == 200) {
            console.log(this.response)
            var ints = JSON.parse(this.response)
-           int_container.innerHTML = ''
            for (var i = 0; i < ints.length; i++) {
              console.log(ints[i])
              int_container.innerHTML += '<div style="padding:10px" class="col s3"><span class="interest">' + ints[i] + '</span></div>'

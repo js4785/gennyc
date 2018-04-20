@@ -15,5 +15,5 @@ wtforms
 wtforms_components
 python-dateutil
 flask-restful
-apscheduler
+BeautifulSoup4
 py-ms-cognitive

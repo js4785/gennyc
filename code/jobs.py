@@ -24,6 +24,7 @@ from flask_login import LoginManager, login_required, login_user, logout_user, c
 from flask_restful import Resource, Api
 import datetime
 import jinja2
+# import data_retrieval_job as dr
 
 
 
@@ -64,6 +65,24 @@ def connect_to_cloudsql():
 
     return db
 
+# class PopulateEventsTable(Resource):
+#     def get(self, num):
+#         num = int(num)
+#         if num < 1 or num > 7:
+#             return {}, 400
+#         task = taskqueue.add(
+#             method='GET',
+#             url='/jobs/events/populate/' + num)
+#         return 'Task {} enqueued, ETA {}.'.format(task.name, task.eta), 200
+# api.add_resource(PopulateEventsTable, '/jobs/events/trigger_pop_job/<string:num>')
+#
+# class ExecutePopJob(Resource):
+#     def get(self, num):
+#         num = int(num)
+#         dr.add_events(num)
+#         return {}, 200
+# api.add_resource(ExecutePopJob, '/jobs/events/populate/<string:num>')
+#
 class MailBlastCron(Resource):
     def get(self):
         task = taskqueue.add(

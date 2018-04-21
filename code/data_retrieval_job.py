@@ -7,7 +7,6 @@ import string
 import re
 import sys
 import os
-import urlfetch
 
 import urllib2
 import urllib

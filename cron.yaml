@@ -4,7 +4,7 @@ cron:
   schedule: every monday 11:30
   timezone: US/Eastern
 
-- description: "Sunday event recommendation blast"
+- description: "event db population job"
   url: /jobs/events/trigger_pop_job
   schedule: every 24 hours
 

@@ -1,5 +1,7 @@
 import logging
 import recommender
+import urllib2
+import requests
 
 try:
     from google.appengine.api import mail
@@ -24,7 +26,7 @@ from flask_login import LoginManager, login_required, login_user, logout_user, c
 from flask_restful import Resource, Api
 import datetime
 import jinja2
-# import data_retrieval_job as dr
+import data_retrieval_job as dr
 
 
 
@@ -65,24 +67,30 @@ def connect_to_cloudsql():
 
     return db
 
-# class PopulateEventsTable(Resource):
-#     def get(self, num):
-#         num = int(num)
-#         if num < 1 or num > 7:
-#             return {}, 400
-#         task = taskqueue.add(
-#             method='GET',
-#             url='/jobs/events/populate/' + num)
-#         return 'Task {} enqueued, ETA {}.'.format(task.name, task.eta), 200
-# api.add_resource(PopulateEventsTable, '/jobs/events/trigger_pop_job/<string:num>')
-#
-# class ExecutePopJob(Resource):
-#     def get(self, num):
-#         num = int(num)
-#         dr.add_events(num)
-#         return {}, 200
-# api.add_resource(ExecutePopJob, '/jobs/events/populate/<string:num>')
-#
+class PopulateEventsTable(Resource):
+    def get(self):
+        # num = int(num)
+        # if num < 1 or num > 7:
+        #     return {}, 400
+        task = taskqueue.add(
+            method='GET',
+            url='/jobs/events/populate/today')
+        return 'Task {} enqueued, ETA {}.'.format(task.name, task.eta), 200
+api.add_resource(PopulateEventsTable, '/jobs/events/trigger_pop_job')
+
+class ExecutePopJob(Resource):
+    def get(self):
+        return dr.add_events_limited(), 200
+api.add_resource(ExecutePopJob, '/jobs/events/populate/today')
+
+
+def req_test():
+    tomorrow = datetime.date.today()
+    url = 'http://www.meetup.com/find/events?allMeetups=true&radius=20&userFreeform=New+York%2C+NY&mcId=c10001&mcName=New+York%2C+NY&month={}&day={}&year={}'.format(tomorrow.month, tomorrow.day, tomorrow.year)
+    # return url
+    r = r = urllib2.urlopen(url)
+    return r.read()
+
 class MailBlastCron(Resource):
     def get(self):
         task = taskqueue.add(

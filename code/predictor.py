@@ -25,7 +25,7 @@ class Model:
         self.cat_counts = {}
         self.attr_counts = {}
         self.attr_totals = {}
-        e = self.get_events('tagged.txt')
+        e = self.get_events('code/tagged.txt')
         # random.shuffle(e)
         # self.test = e[-100:]
         self.events = e
@@ -114,9 +114,9 @@ class Model:
         return event_list
 
 
-    def predict_bayes(self, event):
+    def predict_bayes(self, name):
         sw = STOP_WORDS_NLTK
-        context = event.name.split(' ')
+        context = name.split(' ')
         # context.extend(event.name.split(' '))
         processed = []
         for word in context:

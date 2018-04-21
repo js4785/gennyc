@@ -10,10 +10,13 @@ import os
 import urlfetch
 
 import urllib2
+import urllib
 from bs4 import BeautifulSoup
 import requests
+import predictor
 
-MEETUP_API_KEY  = '6e735a762056651032171a3d106b4d78'
+
+MEETUP_API_KEY  = '45734f41a137c50167f71323667c68'
 MEETUP_API_BASE = 'https://api.meetup.com'
 
 URL_RE  = r'^https?:\/\/.*[\r\n]*'
@@ -46,7 +49,7 @@ CATEGORIES = {'food_drink': ['desserts', 'wine', 'beer', 'vegetarian', 'vegan', 
              }
 
 MEETUP_TAGS = ['arts-culture','beliefs','book-clubs','career-business','dancing',
-                'parents-family','fashion-beauty','film','food','hobbies-crafts',
+                'parents-family', 'film','food','hobbies-crafts',
                 'education','music','outdoors-adventure','language','sports-fitness',
                 'social','tech']
 num_events = 200
@@ -56,7 +59,7 @@ def get_tagged_events():
     f.write("")
     f.close()
 
-    for category in ['dancing']:
+    for category in MEETUP_TAGS:
 
         events_added = 0
         days = 1
@@ -96,6 +99,70 @@ def get_tagged_events():
             print ('Finished ' + str(days))
             days += 1
 
+def req_test():
+    tomorrow = datetime.date.today()
+    url = 'http://www.meetup.com/find/events?allMeetups=true&radius=20&userFreeform=New+York%2C+NY&mcId=c10001&mcName=New+York%2C+NY&month={}&day={}&year={}'.format(tomorrow.month, tomorrow.day, tomorrow.year)
+    # return url
+    r = r = urllib2.urlopen(url)
+    return r.read()
+
+def add_events_limited():
+    db = MySQLdb.connect(host="35.193.223.145",
+                     user="kayvon",
+                     passwd="kayvon",
+                     db="Dev")
+
+    m = predictor.Model()
+    urls = set()
+    err = 429
+
+    tomorrow = datetime.date.today()
+    url = 'http://www.meetup.com/find/events?allMeetups=true&radius=20 \
+            &userFreeform=New+York%2C+NY&mcId=c10001&mcName=New+York \
+            %2C+NY&month={}&day={}&year={}'.format(tomorrow.month, tomorrow.day, tomorrow.year)
+
+    r = urllib2.urlopen(url)
+    data = r.read()
+
+    soup = BeautifulSoup(data)
+
+    for link in soup.find_all('a'):
+        href = link.get('href')
+        if ('/events/' in href and '/find/' not in href):
+            urls.add(href)
+
+    added = []
+    for url in urls:
+        tmp = url[23:-1].split("/")
+        tmp.remove('events')
+        URLNAME, EVENT_ID = tmp
+        api_url = '{0}/{1}/events/{2}'.format(MEETUP_API_BASE, URLNAME, EVENT_ID)
+        request = urllib2.Request(api_url + '?key=' + MEETUP_API_KEY, headers=headers)
+        try:
+            result = urllib2.urlopen(request)
+        except:
+            break
+        status = result.getcode()
+        if status == err:
+            break
+        if status != 200:
+            continue
+
+        content = result.read()
+        event_info = json.loads(content)
+        if 'name' in event_info.keys():
+            ename = event_info['name']
+        else:
+            continue
+        tag = m.predict_bayes(ename)
+
+        success = add_event_from_info(db, event_info, EVENT_ID, tag)
+        if success:
+            added.append(ename + ', ' + tag)
+
+        return '\n'.join(added)
+
+
 
 def add_events(days):
     # if days < 1 or days > 7:
@@ -118,7 +185,8 @@ def add_events(days):
               &month={}&day={}&year={}'.format(tomorrow.month, tomorrow.day, tomorrow.year)
 
         r = requests.get('https://' + url)
-        data = r.text
+        result = urllib2.urlopen('https://' + url)
+        data = result.read()
         soup = BeautifulSoup(data)
 
         for link in soup.find_all('a'):
@@ -132,8 +200,9 @@ def add_events(days):
     f.close()
 
     for url in urls:
-        os.system('python retrieval.py ' + url)
+        os.system('python code/retrieval.py ' + url)
 
+    return
     print ('Finished')
 
 
@@ -152,7 +221,10 @@ def add_events(days):
     f.close()
     db.close()
 
-def add_event_from_info(db, event_info, EVENT_ID):
+def add_event_from_info(db, event_info, EVENT_ID, tag):
+
+    if 'description' not in event_info.keys():
+        return False
 
     if len(event_info['description']) < MIN_CHARS_DESC:
         if verbose:
@@ -218,15 +290,15 @@ def add_event_from_info(db, event_info, EVENT_ID):
     else:
         description = None
 
-    taglist = []
-    for t in TAGS:
-        if t in description.lower() or t in ename.lower():
-            taglist.append(t)
-
-    if len(taglist) > 0:
-        print(ename, taglist)
-    else:
-        return
+    # taglist = []
+    # for t in TAGS:
+    #     if t in description.lower() or t in ename.lower():
+    #         taglist.append(t)
+    #
+    # if len(taglist) > 0:
+    #     print(ename, taglist)
+    # else:
+    #     return
 
     cursor = db.cursor()
 
@@ -293,20 +365,20 @@ def add_event_from_info(db, event_info, EVENT_ID):
 
     eid = cursor.fetchone()
 
-    for tag in taglist:
-        category = None
-        for c in CATEGORIES:
-            if tag in CATEGORIES[c]:
-                category = c
-        et_query =  """
-                    INSERT
-                    INTO EventTags(eid, tag, category)
-                    VALUES (%s, %s, %s)
-                    """
+    # for tag in taglist:
+    # category = None
+    # for c in CATEGORIES:
+    #     if tag in CATEGORIES[c]:
+    #         category = c
+    et_query =  """
+                INSERT
+                INTO EventTags(eid, tag, category)
+                VALUES (%s, %s, %s)
+                """
 
-        cursor.execute(et_query,( eid,
-                                  tag,
-                                  category))
+    cursor.execute(et_query,( eid,
+                              tag,
+                              tag))
 
     db.commit()
 
@@ -314,3 +386,4 @@ def add_event_from_info(db, event_info, EVENT_ID):
 
     if verbose:
         print "Finished."
+    return True

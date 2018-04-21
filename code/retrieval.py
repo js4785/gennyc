@@ -8,8 +8,7 @@ headers = {'Content-Type': 'application/json'}
 params = {'key' : MEETUP_API_KEY}
 
 if __name__ == "__main__":
-    category = sys.argv[-1]
-    EVENT_URL = sys.argv[-2]
+    EVENT_URL = sys.argv[-1]
     tmp = EVENT_URL[23:-1].split("/")
     tmp.remove('events')
     URLNAME, EVENT_ID = tmp
@@ -24,8 +23,6 @@ if __name__ == "__main__":
         f.write(r.content.decode('utf-8'))
         f.write('\n')
         f.write(EVENT_ID)
-        f.write('\n')
-        f.write(category)
         f.write('\n')
     except:
         print ('error')

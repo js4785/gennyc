@@ -26,18 +26,18 @@ class Model:
         self.attr_counts = {}
         self.attr_totals = {}
         e = self.get_events('code/tagged.txt')
-        # random.shuffle(e)
-        # self.test = e[-100:]
-        self.events = e
+        random.shuffle(e)
+        self.test = e[-500:]
+        self.events = e[:-500]
         self.prep_model()
 
-    # def test_model(self):
-    #     count = 0
-    #     for i in self.test:
-    #         if self.predict_bayes(i) == i.tag:
-    #             count += 1
-    #
-    #     print float(count)/float(100)
+    def test_model(self):
+        count = 0
+        for i in self.test:
+            if self.predict_bayes(i.name) == i.tag:
+                count += 1
+
+        print float(count)/float(500)
 
     def prep_model(self):
         sw = STOP_WORDS_NLTK

@@ -61,7 +61,7 @@ def get_tagged_events():
     for category in MEETUP_TAGS:
 
         events_added = 0
-        days = 1
+        days = 5
         while events_added < num_events:
 
             urls = set()
@@ -131,6 +131,7 @@ def add_events_limited():
             urls.add(href)
 
     added = []
+    print len(urls)
     for url in urls:
         tmp = url[23:-1].split("/")
         tmp.remove('events')
@@ -159,7 +160,7 @@ def add_events_limited():
         if success:
             added.append(ename + ', ' + tag)
 
-        return '\n'.join(added)
+    return '\n'.join(added)
 
 
 

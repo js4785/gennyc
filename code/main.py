@@ -450,6 +450,11 @@ def add_group(group_name, users, new):
 @app.route('/groups')
 @login_required
 def group():
+    if not current_user.email_verified:
+        return redirect('verify')
+    if not user_is_tagged(current_user):
+        return redirect('survey')
+        
     groups = get_group_names(current_user)
     pending = {}
     accepted = {}

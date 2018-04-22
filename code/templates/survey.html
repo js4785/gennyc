@@ -13,25 +13,11 @@
             {{ form.csrf_token }}
 
             <div class="input-field col s12">
-              {{ render_field(form.food_and_drinks) }}
+              {{ render_field(form.hobbies) }}
             </div>
 
             <div class="input-field col s12">
-              {{ render_field(form.sports) }}
-            </div>
-
-            <div class="input-field col s12">
-              {{ render_field(form.adrenaline)}}
-              <!-- <div class="form-group">
-                <label>
-                  <input type="checkbox" />
-                  <span>Do you like adrenaline adventures?</span>
-                </label>
-              </div> -->
-            </div>
-
-            <div class="input-field col s12">
-              {{ render_field(form.location)}}
+              {{ render_field(form.causes) }}
             </div>
 
             <div class="input-field col s12">
@@ -42,9 +28,6 @@
               {{ render_field(form.arts_and_culture)}}
             </div>
 
-            <div class="input-field col s12">
-              {{ render_field(form.music)}}
-            </div>
           <button class="btn waves-effect waves-light" type="submit">Submit</button>
         </form>
       </div>

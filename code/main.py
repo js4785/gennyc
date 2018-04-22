@@ -264,24 +264,23 @@ def helper_strip_date(e):
             e = tuple(e)
     return e
 
+def purge_user_tags(user):
+    db = connect_to_cloudsql()
+    cursor = db.cursor()
+
+    query = "DELETE FROM " + ENV_DB + ".UserTags WHERE username='{}'".format(user.username)
+    cursor.execute(query)
+    db.commit()
+    db.close()
 
 def fill_user_tags(user, survey):
     db = connect_to_cloudsql()
     cursor = db.cursor()
 
-    for items, cname in [
-                            (survey.food_and_drinks, "food_drink"),
-                            (survey.sports, "sports"),
-                            (["adrenaline"] if survey.adrenaline else [], "adrenaline"),
-                            (survey.location, "location"),
-                            (survey.fitness, "fitness"),
-                            (survey.arts_and_culture, "arts_culture"),
-                            (survey.music, "music")
-                        ]:
-
+    for items in [survey.hobbies, survey.causes, survey.fitness, survey.arts_and_culture]:
         for item in items:
             query = "INSERT INTO " + ENV_DB + ".UserTags(username, tag, category) VALUES ('{}', '{}', '{}') \
-            ON DUPLICATE KEY UPDATE tag=VALUES(tag), category=VALUES(category)".format(user.username, item, cname)
+            ON DUPLICATE KEY UPDATE tag=VALUES(tag), category=VALUES(category)".format(user.username, item, item)
             cursor.execute(query)
 
     db.commit()
@@ -316,6 +315,7 @@ def survey():
         survey_obj = UserInterests()
         form.populate_obj(survey_obj)
 
+        purge_user_tags(current_user)
         fill_user_tags(current_user, survey_obj)
 
         return redirect(url_for('home'))
@@ -362,6 +362,10 @@ def fill_event(user, event):
     query = "INSERT INTO " + ENV_DB + ".Events(ename, description, start_date, end_date, num_cap, num_attending, lid) \
     VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}')".format(event.event_name, event.description, event.start_date, event.end_date, event.cap, event.attending, lid)
     cursor.execute(query)
+
+    # Insert category into EventTags
+    eid = cursor.lastrowid
+    query = "INSERT INTO " + ENV_DB + ".EventTags(eid, tag, category) VALUES ('{}', '{}')".format(eid, event.category, event.category)
 
     db.commit()
     db.close()

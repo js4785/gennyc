@@ -10,7 +10,7 @@ cron:
 
 - description: "event db population job"
   url: /jobs/events/trigger_pop_job/1
-  schedule: every day 11:59
+  schedule: every 24 hours
 
 # - description: "test"
 #   url: /jobs/mail/test

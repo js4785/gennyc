@@ -27,7 +27,7 @@ jobs:
           command: |
             echo $PYTHONPATH
             apt install -y unzip libmysqlclient-dev google-cloud-sdk-app-engine-python
-            apt-get install google-cloud-sdk-app-engine-python-extras
+            apt-get install google-cloud-sdk-app-engine-python-extras --fix-missing
 
             pip install virtualenv
             virtualenv venv

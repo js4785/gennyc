@@ -68,20 +68,17 @@ def connect_to_cloudsql():
     return db
 
 class PopulateEventsTable(Resource):
-    def get(self):
-        # num = int(num)
-        # if num < 1 or num > 7:
-        #     return {}, 400
+    def get(self, num):
         task = taskqueue.add(
             method='GET',
-            url='/jobs/events/populate/today')
+            url='/jobs/events/populate/today/' + num)
         return 'Task {} enqueued, ETA {}.'.format(task.name, task.eta), 200
-api.add_resource(PopulateEventsTable, '/jobs/events/trigger_pop_job')
+api.add_resource(PopulateEventsTable, '/jobs/events/trigger_pop_job/<string:num>')
 
 class ExecutePopJob(Resource):
-    def get(self):
-        return dr.add_events_limited(), 200
-api.add_resource(ExecutePopJob, '/jobs/events/populate/today')
+    def get(self, num):
+        return dr.add_events_limited(num), 200
+api.add_resource(ExecutePopJob, '/jobs/events/populate/today/<string:num>')
 
 
 def req_test():

@@ -105,7 +105,9 @@ def req_test():
     r = r = urllib2.urlopen(url)
     return r.read()
 
-def add_events_limited():
+def add_events_limited(day):
+    if day != 1 and day != 7:
+        return
     db = MySQLdb.connect(host="35.193.223.145",
                      user="kayvon",
                      passwd="kayvon",
@@ -115,7 +117,7 @@ def add_events_limited():
     urls = set()
     err = 429
 
-    tomorrow = datetime.date.today()
+    tomorrow = datetime.date.today() + datetime.timedelta(days=day)
     url = 'http://www.meetup.com/find/events?allMeetups=true&radius=20 \
             &userFreeform=New+York%2C+NY&mcId=c10001&mcName=New+York \
             %2C+NY&month={}&day={}&year={}'.format(tomorrow.month, tomorrow.day, tomorrow.year)
@@ -167,7 +169,7 @@ def add_events_limited():
 def add_events(days):
     # if days < 1 or days > 7:
     #     return
-
+    m = predictor.Model()
     db = MySQLdb.connect(host="35.193.223.145",
                      user="kayvon",
                      passwd="kayvon",
@@ -178,6 +180,7 @@ def add_events(days):
 
     today = datetime.date.today()
     tomorrow = today
+    tomorrow = tomorrow + datetime.timedelta(days=1)
     for i in range(days):
         tomorrow = tomorrow + datetime.timedelta(days=1)
         url = 'www.meetup.com/find/events/?allMeetups=true&radius=20 \
@@ -185,8 +188,7 @@ def add_events(days):
               &month={}&day={}&year={}'.format(tomorrow.month, tomorrow.day, tomorrow.year)
 
         r = requests.get('https://' + url)
-        result = urllib2.urlopen('https://' + url)
-        data = result.read()
+        data = r.text
         soup = BeautifulSoup(data)
 
         for link in soup.find_all('a'):
@@ -202,7 +204,6 @@ def add_events(days):
     for url in urls:
         os.system('python code/retrieval.py ' + url)
 
-    return
     print ('Finished')
 
 
@@ -214,8 +215,15 @@ def add_events(days):
         if lines[i] == '' or lines[i + 1] == '':
             i += 2
             continue
+
         event_info = json.loads(lines[i])
-        add_event_from_info(db, event_info, lines[i+1])
+        if 'name' in event_info.keys():
+            ename = event_info['name']
+        else:
+            i += 2
+            continue
+        tag = m.predict_bayes(ename)
+        add_event_from_info(db, event_info, lines[i+1], tag)
         i += 2
 
     f.close()
@@ -309,6 +317,14 @@ def add_event_from_info(db, event_info, EVENT_ID, tag):
 
     result = cursor.fetchone()
 
+    if result:
+        print "Event already in database."
+        return
+
+    cursor.execute("""SELECT eid
+                      FROM Events
+                      WHERE ename = %s
+                    """, (ename,))
     if result:
         print "Event already in database."
         return

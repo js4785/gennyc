@@ -9,7 +9,7 @@
         {% for interest in survey_results %}
         <br style="-webkit-box-sizing:inherit;box-sizing:inherit;">
         <br style="-webkit-box-sizing:inherit;box-sizing:inherit;">
-        {% for eid, ename, description, start_date, end_date, num_cap, num_attending, lname, address_1, tag, lat, lon in events %}
+        {% for eid, ename, description, category, start_date, end_date, num_cap, num_attending, lname, address_1, tag, lat, lon in events[:10] %}
         {% if tag == interest %}
         <div class="card horizontal" style="-webkit-box-sizing:inherit;box-sizing:inherit;-webkit-box-shadow:0 2px 2px 0 rgba(0,0,0,0.14),0 3px 1px -2px rgba(0,0,0,0.12),0 1px 5px 0 rgba(0,0,0,0.2);box-shadow:0 2px 2px 0 rgba(0,0,0,0.14),0 3px 1px -2px rgba(0,0,0,0.12),0 1px 5px 0 rgba(0,0,0,0.2);position:relative;margin:.5rem 0 1rem 0;background-color:#fff;-webkit-transition:-webkit-box-shadow .25s;transition:-webkit-box-shadow .25s;transition:box-shadow .25s;transition:box-shadow .25s, -webkit-box-shadow .25s;border-radius:2px;display:-webkit-box;display:-webkit-flex;display:-ms-flexbox;display:flex;">
           <div class="card-image" style="-webkit-box-sizing:inherit;box-sizing:inherit;position:relative;max-width:50%;">

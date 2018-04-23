@@ -1,4 +1,5 @@
 import main
+import datetime
 
 ENV_DB = 'Dev'
 
@@ -53,13 +54,16 @@ class Recommend:
                 WHERE U.username='{}' AND
                     E.tag = U.tag AND
                     E1.eid = E.eid AND
-                    E1.lid = L.lid
+                    E1.lid = L.lid AND
+                    E1.start_date >= {}
+                ORDER by E1.start_date
                 """.format(
                         ENV_DB,
                         ENV_DB,
                         ENV_DB,
                         ENV_DB,
-                        self.user.username
+                        self.user.username,
+                        str(datetime.date.today())
                     )
 
         cursor.execute(query)
@@ -108,18 +112,21 @@ class GroupRecommend:
         result = []
         for tag in self.interests:
             query = """
-                    SELECT DISTINCT E.eid, E1.ename, E1.description, E1.start_date, E1.end_date, E1.num_cap,
+                    SELECT DISTINCT E.eid, E1.ename, E1.description, E.category, E1.start_date, E1.end_date, E1.num_cap,
                     E1.num_attending, L.lname, L.address_1, E.tag, L.lat, L.lon
                     FROM {}.EventTags AS E, {}.UserTags AS U, {}.Events as E1, {}.Locations as L
                     WHERE E.tag = '{}' AND
                         E1.eid = E.eid AND
-                        E1.lid = L.lid
+                        E1.lid = L.lid AND
+                        E1.start_date > {}
+                    ORDER by E1.start_date
                     """.format(
                             ENV_DB,
                             ENV_DB,
                             ENV_DB,
                             ENV_DB,
-                            tag
+                            tag,
+                            str(datetime.date.today())
                         )
 
             cursor.execute(query)

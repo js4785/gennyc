@@ -26,8 +26,9 @@ jobs:
           name: Install Dependencies
           command: |
             echo $PYTHONPATH
+            apt-get clean
             apt install -y unzip libmysqlclient-dev google-cloud-sdk-app-engine-python
-            apt-get install google-cloud-sdk-app-engine-python-extras --fix-missing
+            apt-get install google-cloud-sdk-app-engine-python-extras
 
             pip install virtualenv
             virtualenv venv

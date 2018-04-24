@@ -225,9 +225,7 @@
       var tag_filters = document.getElementById('tag_filters')
       tag_filters.innerHTML = ''
       var tag_arr = Array.from(tag_set)
-      // tag_filters.innerHTML += '<div class="row">'
       for (var i = 0; i < tag_arr.length; i++) {
-        // if (i % 3 == 0 && i !=0) tag_filters.innerHTML += '</div>'
         // if (i % 3 == 0 && i !=0) tag_filters.innerHTML += '<div class="row">'
         tag_filters.innerHTML += '<div class="col s3"><label><input id="'+tag_arr[i]+'" class="tagf" type="checkbox" checked="checked" /><span>'+tag_arr[i]+'</span></label></div>'
       }
@@ -266,8 +264,6 @@
           tag_checks[i].checked = true
         }
       }
-
-
       modal.open()
     }
 
@@ -303,19 +299,15 @@
       showPageNum()
     }
 
-    function closeFilters() {
-      var elem = document.querySelector('.modal.filter')
-      var modal = M.Modal.getInstance(elem)
-      modal.close()
-    }
-
     function filterNumDays(days, event_list) {
       var ms = days * 86400000
       var today = new Date()
       var result = []
       for (var i = 0; i < event_list.length; i++) {
         var e = event_list[i]
-        var e_date = new Date(today.getFullYear() + e.start_date)
+        var split_date = e.start_date.split(' ')
+        var date_string = split_date[0] + ' ' + split_date[1] + ', ' + today.getFullYear() + ' ' + split_date[2] + ' ' + split_date[3]
+        var e_date = new Date(date_string)
         var diff_ms = (e_date - today)
         if (diff_ms < ms && diff_ms > 0) {
           result.push(event_list[i])
@@ -339,6 +331,12 @@
       for (var i = 0; i < tag_checks.length; i++) {
         tag_checks[i].checked = checked
       }
+    }
+
+    function closeFilters() {
+      var elem = document.querySelector('.modal.filter')
+      var modal = M.Modal.getInstance(elem)
+      modal.close()
     }
 
     getEvents()

@@ -6,6 +6,7 @@ import MySQLdb
 from flask import Flask, render_template, redirect, url_for, request
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
 from flask_restful import Resource, Api
+import predictor
 
 import recommender
 from event import Event, EventForm
@@ -23,7 +24,6 @@ app.debug = True
 
 # === APP CONFIGURATIONS
 app.config['SECRET_KEY'] = 'secretkey123984392032'
-
 
 LOGIN_MANAGER = LoginManager()
 LOGIN_MANAGER.init_app(app)
@@ -813,6 +813,13 @@ class GetGroupInterests(Resource):
 
 API.add_resource(GetGroupInterests, '/api/get_group_interests/<string:group_id>')
 
+
+class PredictTag(Resource):
+    def get(self, title):
+        m = predictor.Model()
+        response = m.predict_bayes(title)
+        return response
+API.add_resource(PredictTag, '/api/predict_tag/<string:title>')
 
 @app.route('/profile')
 @login_required

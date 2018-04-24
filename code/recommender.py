@@ -112,7 +112,7 @@ class GroupRecommend:
         result = []
         for tag in self.interests:
             query = """
-                    SELECT DISTINCT E.eid, E1.ename, E1.description, E1.start_date, E1.end_date, E1.num_cap,
+                    SELECT DISTINCT E.eid, E1.ename, E1.description, E.category, E1.start_date, E1.end_date, E1.num_cap,
                     E1.num_attending, L.lname, L.address_1, E.tag, L.lat, L.lon
                     FROM {}.EventTags AS E, {}.UserTags AS U, {}.Events as E1, {}.Locations as L
                     WHERE E.tag = '{}' AND

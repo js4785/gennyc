@@ -27,6 +27,8 @@ import datetime
 import jinja2
 import json
 from py_ms_cognitive import PyMsCognitiveImageSearch
+import predictor
+
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -458,7 +460,7 @@ def group():
         return redirect('verify')
     if not user_is_tagged(current_user):
         return redirect('survey')
-        
+
     groups = get_group_names(current_user)
     pending = {}
     accepted = {}
@@ -576,6 +578,13 @@ class GetGroupInterests(Resource):
         response = rec.get_group_interests()
         return response
 api.add_resource(GetGroupInterests, '/api/get_group_interests/<string:group_id>')
+
+class PredictTag(Resource):
+    def get(self, title):
+        m = predictor.Model()
+        response = m.predict_bayes(title)
+        return response
+api.add_resource(PredictTag, '/api/predict_tag/<string:title>')
 
 @app.route('/profile')
 @login_required

@@ -84,18 +84,15 @@
 <script type="text/javascript">
 
   function predict_tag() {
-    console.log('predicting')
+    document.getElementById('prediction').innerHTML = 'predicting tag...'
     var name_input = document.getElementById('event_name');
     var xmlHttp = new XMLHttpRequest();
 
-    var url = 'api/predict_tag/' + name_input.value
+    var url = 'api/model/predict_tag/' + name_input.value
 
     xmlHttp.onreadystatechange = function() {
       if (this.readyState == 4 && this.status == 200) {
-        console.log(this.response)
         document.getElementById('prediction').innerHTML = 'predicted tag: <span class="interest">' + this.response.replace(/\"/g, "") + '</span>'
-        // document.getElementById('category').value = this.response.replace(/\"/g, "")
-        // document.getElementById('category').text = this.response.replace(/\"/g, "")
       }
     };
     xmlHttp.open('GET', url, true)

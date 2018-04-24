@@ -579,13 +579,6 @@ class GetGroupInterests(Resource):
         return response
 api.add_resource(GetGroupInterests, '/api/get_group_interests/<string:group_id>')
 
-class PredictTag(Resource):
-    def get(self, title):
-        m = predictor.Model()
-        response = m.predict_bayes(title)
-        return response
-api.add_resource(PredictTag, '/api/predict_tag/<string:title>')
-
 @app.route('/profile')
 @login_required
 def profile_home():

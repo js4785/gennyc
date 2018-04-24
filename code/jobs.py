@@ -71,14 +71,15 @@ class PopulateEventsTable(Resource):
     def get(self, num):
         task = taskqueue.add(
             method='GET',
-            url='/jobs/events/populate/today/' + num)
+            url='/jobs/events/populate/' + num)
         return 'Task {} enqueued, ETA {}.'.format(task.name, task.eta), 200
 api.add_resource(PopulateEventsTable, '/jobs/events/trigger_pop_job/<string:num>')
 
 class ExecutePopJob(Resource):
     def get(self, num):
+        num = int(num)
         return dr.add_events_limited(num), 200
-api.add_resource(ExecutePopJob, '/jobs/events/populate/today/<string:num>')
+api.add_resource(ExecutePopJob, '/jobs/events/populate/<string:num>')
 
 
 def req_test():

@@ -3,7 +3,15 @@ cron:
   url: /jobs/mail/queue_emails
   schedule: every monday 11:30
   timezone: US/Eastern
-  
+
+- description: "event db population job"
+  url: /jobs/events/trigger_pop_job/7
+  schedule: every 24 hours
+
+- description: "event db population job"
+  url: /jobs/events/trigger_pop_job/1
+  schedule: every 24 hours
+
 # - description: "test"
 #   url: /jobs/mail/test
 #   schedule: every monday 5:40

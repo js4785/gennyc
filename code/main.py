@@ -25,6 +25,7 @@ from flask_login import LoginManager, login_required, login_user, logout_user, c
 from flask_restful import Resource, Api
 import datetime
 import jinja2
+import json
 from py_ms_cognitive import PyMsCognitiveImageSearch
 
 login_manager = LoginManager()
@@ -54,8 +55,8 @@ DB_HOST_DEV = '35.193.223.145'
 ENV_DB = 'Dev'
 # print (os.environ.get('BRANCH'))
 
-MOCK_EVENTS = [Event('Rollerblading Tour of Central Park', 2018, 3, 20, 'Join this fun NYC tour and get some exercise!'),
-                Event('Rollerblading Tour of Central Park Round 2', 2018, 3, 22, 'Join this fun NYC tour and get some exercise again!')]
+# MOCK_EVENTS = [Event('Rollerblading Tour of Central Park', 2018, 3, 20, 'Join this fun NYC tour and get some exercise!'),
+                # Event('Rollerblading Tour of Central Park Round 2', 2018, 3, 22, 'Join this fun NYC tour and get some exercise again!')]
 
 api = Api(app)
 randomKey= '472389hewhuw873dsa4245193ej23yfehw'
@@ -224,6 +225,7 @@ def home():
 
 
 @app.route('/explore')
+@login_required
 def explore_events():
 
     return render_template("explore.html")
@@ -236,25 +238,18 @@ def recommend():
         return redirect('verify')
     if not user_is_tagged(current_user):
         return redirect('survey')
-    rec = recommender.Recommend(current_user)
-    # interests = rec.get_user_interests()
-    events = rec.get_events()
-    print (len(events))
 
-    if len(events) > 50:
-        events = events[0:50]
+    show_group = False
+    group_id = -1
+    g_id = request.args.get('group')
+    name = ''
+    if g_id is not None:
+        group_id = g_id
+        show_group = True
+        name = get_group_by_id(g_id)
+    print (name)
 
-    # Create set of interests
-    interests = set()
-    for e in events:
-        #  Extract interets from Event entity (assuming last attribute)
-        interests.add(e[-3])
-
-    for event_index, e in enumerate(events):
-
-        events[event_index] = helper_strip_date(e)
-
-    return render_template("recommendations.html", survey_results=list(interests), events=events)
+    return render_template("recommendations.html", g_id=group_id, name=name)
 
 
 def helper_strip_date(e):
@@ -265,29 +260,27 @@ def helper_strip_date(e):
             e = tuple(e)
         if type(x) is str:
             e = list(e)
-            print x
-            e[idx] = x.decode('utf-8')
+            e[idx] = unicode(x, errors='ignore')
             e = tuple(e)
     return e
 
+def purge_user_tags(user):
+    db = connect_to_cloudsql()
+    cursor = db.cursor()
+
+    query = "DELETE FROM " + ENV_DB + ".UserTags WHERE username='{}'".format(user.username)
+    cursor.execute(query)
+    db.commit()
+    db.close()
 
 def fill_user_tags(user, survey):
     db = connect_to_cloudsql()
     cursor = db.cursor()
 
-    for items, cname in [
-                            (survey.food_and_drinks, "food_drink"),
-                            (survey.sports, "sports"),
-                            (["adrenaline"] if survey.adrenaline else [], "adrenaline"),
-                            (survey.location, "location"),
-                            (survey.fitness, "fitness"),
-                            (survey.arts_and_culture, "arts_culture"),
-                            (survey.music, "music")
-                        ]:
-
+    for items in [survey.hobbies, survey.causes, survey.fitness, survey.arts_and_culture]:
         for item in items:
             query = "INSERT INTO " + ENV_DB + ".UserTags(username, tag, category) VALUES ('{}', '{}', '{}') \
-            ON DUPLICATE KEY UPDATE tag=VALUES(tag), category=VALUES(category)".format(user.username, item, cname)
+            ON DUPLICATE KEY UPDATE tag=VALUES(tag), category=VALUES(category)".format(user.username, item, item)
             cursor.execute(query)
 
     db.commit()
@@ -322,6 +315,7 @@ def survey():
         survey_obj = UserInterests()
         form.populate_obj(survey_obj)
 
+        purge_user_tags(current_user)
         fill_user_tags(current_user, survey_obj)
 
         return redirect(url_for('home'))
@@ -369,6 +363,10 @@ def fill_event(user, event):
     VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}')".format(event.event_name, event.description, event.start_date, event.end_date, event.cap, event.attending, lid)
     cursor.execute(query)
 
+    # Insert category into EventTags
+    eid = cursor.lastrowid
+    query = "INSERT INTO " + ENV_DB + ".EventTags(eid, tag, category) VALUES ('{}', '{}')".format(eid, event.category, event.category)
+
     db.commit()
     db.close()
 
@@ -398,24 +396,14 @@ def confirm(key, username):
 
     return redirect(url_for('login'))
 
-# @app.route('/test_email')
-# def test_email():
-#     sender  = 'genNYC <support@{}.appspotmail.com>'.format(app_identity.get_application_id())
-#     email = 'kss2153@columbia.edu'
-#     confirm_url = 'google.com'
-#     jinja_environment = jinja2.Environment(
-#         loader=jinja2.FileSystemLoader(os.path.dirname(__file__)))
-#     template = jinja_environment.get_template('templates/email_template.html')
-#     email_body = template.render({'confirm_url': confirm_url})
-#
-#     message = mail.EmailMessage(
-#         sender = email,
-#         to = email,
-#         subject = 'Please confirm your subscription to Mailing-List XYZ',
-#         html = email_body)
-#
-#     message.send()
-#     return 'OK'
+def get_group_by_id(gid):
+    db = connect_to_cloudsql()
+    cursor = db.cursor()
+    query = "SELECT groupName from " + ENV_DB + ".Groups WHERE gid='" + gid + "'"
+    cursor.execute(query)
+    data = cursor.fetchone()
+    db.close()
+    return data[0]
 
 def get_group_names(user):
     db = connect_to_cloudsql()
@@ -430,30 +418,47 @@ def get_group_names(user):
 def get_group_members(group_name):
     db = connect_to_cloudsql()
     cursor = db.cursor()
-    query = ("SELECT username from " + ENV_DB + ".Groups WHERE groupName='{}'").format(group_name)
+    query = ("SELECT username, creator, gid from " + ENV_DB + ".Groups WHERE groupName='{}'").format(group_name)
     cursor.execute(query)
     data = cursor.fetchall()
     db.close()
-    return list(i[0] for i in data)
+    return list(list((i[0], i[1], int(i[2]))) for i in data)
 
-def add_group(group_name, users):
+def add_group(group_name, users, new):
     db = connect_to_cloudsql()
-    users.append(current_user.username)
+    g_id = 0
+    cursor = db.cursor()
+    cursor.execute('SELECT max(gid) from ' + ENV_DB + '.Groups')
+    data = cursor.fetchone()
+    print (data)
+    if data[0]:
+        g_id = int(data[0])
+
+    print g_id
+    if new:
+        g_id += 1
+        users.append(current_user.username)
+
     for user in users:
-        cursor = db.cursor()
+        creator = 0
         status = '2'
         if (user == current_user.username):
             status = '1'
-        query = ("INSERT INTO " + ENV_DB + ".Groups(groupName, username, status) \
-        VALUES ('{}','{}','{}')").format(group_name, user, status)
+            creator = 1
+        query = ("INSERT INTO " + ENV_DB + ".Groups(gid, groupName, username, status, creator) \
+        VALUES ('{}','{}','{}','{}','{}')").format(g_id, group_name, user, status, creator)
         cursor.execute(query)
     db.commit()
     db.close()
 
-
 @app.route('/groups')
 @login_required
 def group():
+    if not current_user.email_verified:
+        return redirect('verify')
+    if not user_is_tagged(current_user):
+        return redirect('survey')
+        
     groups = get_group_names(current_user)
     pending = {}
     accepted = {}
@@ -463,15 +468,19 @@ def group():
             accepted[group_name] = members
         elif (status == '2'):
             pending[group_name] = members
-    return render_template("group.html", pending=pending, accepted=accepted)
+    username = current_user.username
+    return render_template("group.html", pending=pending, accepted=accepted, user=username)
 
 class CreateGroup(Resource):
-    def put(self, groupname):
+    def put(self, groupname, new_flag):
         users = request.args.getlist('users')
-        add_group(groupname, users)
+        new = True
+        if new_flag != 'true':
+            new = False
+        add_group(groupname, users, new)
         return {}, 200
 
-api.add_resource(CreateGroup, '/api/new_group/<string:groupname>')
+api.add_resource(CreateGroup, '/api/new_group/<string:groupname>/<string:new_flag>')
 
 class CheckValidUser(Resource):
     def get(self, username):
@@ -512,7 +521,7 @@ class CheckValidGroupName(Resource):
             return {}, 201
         db = connect_to_cloudsql()
         cursor = db.cursor()
-        cursor.execute("SELECT * FROM " + ENV_DB + ".Groups WHERE groupName='" + group_name + "'")
+        cursor.execute("SELECT * FROM " + ENV_DB + ".Groups WHERE groupName='" + group_name + "' AND username='" + current_user.username + "'")
         data = cursor.fetchone()
         db.close()
         if (data):
@@ -535,6 +544,43 @@ class RespondToRequest(Resource):
         return {}, 200
 api.add_resource(RespondToRequest, '/api/respond_to_request/<string:group_name>/<string:response>')
 
+class GetEventRecs(Resource):
+    def get(self):
+        rec = recommender.Recommend(current_user)
+        events = rec.get_events()
+        for event_index, e in enumerate(events):
+            events[event_index] = helper_strip_date(e)
+        response = []
+        for e in events:
+            e = Event(*e)
+            response.append(e.toJSON())
+        return response
+api.add_resource(GetEventRecs, '/api/get_event_recs')
+
+class GetGroupEventRecs(Resource):
+    def get(self, group_id):
+        rec = recommender.GroupRecommend(group_id)
+        events = rec.get_events()
+        for event_index, e in enumerate(events):
+            events[event_index] = helper_strip_date(e)
+        response = []
+        for e in events:
+            e = Event(*e)
+            response.append(e.toJSON())
+        return response
+api.add_resource(GetGroupEventRecs, '/api/get_group_event_recs/<string:group_id>')
+
+class GetGroupInterests(Resource):
+    def get(self, group_id):
+        rec = recommender.GroupRecommend(group_id)
+        response = rec.get_group_interests()
+        return response
+api.add_resource(GetGroupInterests, '/api/get_group_interests/<string:group_id>')
+
+@app.route('/profile')
+@login_required
+def profile_home():
+    return redirect('/profile/' + current_user.username)
 
 @app.route('/profile/<string:username>')
 @login_required

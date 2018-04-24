@@ -1,5 +1,7 @@
 import logging
 import recommender
+import urllib2
+import requests
 
 try:
     from google.appengine.api import mail
@@ -24,6 +26,8 @@ from flask_login import LoginManager, login_required, login_user, logout_user, c
 from flask_restful import Resource, Api
 import datetime
 import jinja2
+import data_retrieval_job as dr
+
 
 
 # These environment variables are configured in app.yaml.
@@ -31,27 +35,14 @@ CLOUDSQL_CONNECTION_NAME = os.environ.get('CLOUDSQL_CONNECTION_NAME')
 CLOUDSQL_USER = os.environ.get('CLOUDSQL_USER')
 CLOUDSQL_PASSWORD = os.environ.get('CLOUDSQL_PASSWORD')
 
-# CLOUDSQL_CONNECTION_NAME = "gennyc-dev:us-central1:mysqldev"
-# CLOUDSQL_USER = "kayvon"
-# CLOUDSQL_PASSWORD = "kayvon"
 
 DB_HOST_DEV = '35.193.223.145'
 # DB_HOST_DEV = "127.0.0.1" # Using for local setup
 
-# ENV = ''
-# if os.environ.get('BRANCH') != 'master':
-#     ENV = 'Dev'
-# else:
-#     ENV = 'Uat'
-#     CLOUDSQL_CONNECTION_NAME = 'gennyc-uat:us-central1:mysqluat'
-#
 
 
 ENV_DB = 'Dev'
 # print (os.environ.get('BRANCH'))
-
-MOCK_EVENTS = [Event('Rollerblading Tour of Central Park', 2018, 3, 20, 'Join this fun NYC tour and get some exercise!'),
-                Event('Rollerblading Tour of Central Park Round 2', 2018, 3, 22, 'Join this fun NYC tour and get some exercise again!')]
 
 api = Api(app)
 randomKey= '472389hewhuw873dsa4245193ej23yfehw'
@@ -75,6 +66,28 @@ def connect_to_cloudsql():
             host=DB_HOST_DEV, user='kayvon', passwd='kayvon', db='Dev', port=3306)
 
     return db
+
+class PopulateEventsTable(Resource):
+    def get(self, num):
+        task = taskqueue.add(
+            method='GET',
+            url='/jobs/events/populate/' + num)
+        return 'Task {} enqueued, ETA {}.'.format(task.name, task.eta), 200
+api.add_resource(PopulateEventsTable, '/jobs/events/trigger_pop_job/<string:num>')
+
+class ExecutePopJob(Resource):
+    def get(self, num):
+        num = int(num)
+        return dr.add_events_limited(num), 200
+api.add_resource(ExecutePopJob, '/jobs/events/populate/<string:num>')
+
+
+def req_test():
+    tomorrow = datetime.date.today()
+    url = 'http://www.meetup.com/find/events?allMeetups=true&radius=20&userFreeform=New+York%2C+NY&mcId=c10001&mcName=New+York%2C+NY&month={}&day={}&year={}'.format(tomorrow.month, tomorrow.day, tomorrow.year)
+    # return url
+    r = r = urllib2.urlopen(url)
+    return r.read()
 
 class MailBlastCron(Resource):
     def get(self):

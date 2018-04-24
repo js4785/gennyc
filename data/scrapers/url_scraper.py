@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import requests
 import datetime
 import sys
+import os
 
 def main():
     urls = set()
@@ -25,9 +26,12 @@ def main():
             href = link.get('href')
             if ('/events/' in href and '/find/' not in href):
                 urls.add(href)
-                print(link.get('href'))
+                # print(link.get('href'))
 
     print(len(urls))
+
+    for url in urls:
+        os.system('python ../data_retrieval/event_pipeline.py ' + url)
 
 if __name__ == "__main__":
     main()

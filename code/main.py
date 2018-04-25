@@ -758,7 +758,10 @@ class GetEventRecs(Resource):
         response = []
         for event in events:
             event = Event(*event)
-            response.append(event.to_json())
+            try:
+                response.append(event.to_json())
+            except:
+                continue
         return response
 
 
@@ -808,19 +811,6 @@ class GetGroupInterests(Resource):
 
 
 API.add_resource(GetGroupInterests, '/api/get_group_interests/<string:group_id>')
-
-
-class PredictTag(Resource):
-    """Prediction tag."""
-    def get(self, title):
-        """Predictor."""
-        model = predictor.Model()
-        response = model.predict_bayes(title)
-        return response
-
-
-API.add_resource(PredictTag, '/api/predict_tag/<string:title>')
-
 
 @app.route('/profile')
 @login_required

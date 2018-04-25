@@ -10,7 +10,7 @@ app.debug = True
 # === APP CONFIGURATIONS
 
 app.config['SECRET_KEY'] = 'secretkey123984392032'
-MODEL = predictor.Model()
+m = predictor.Model()
 
 api = Api(app)
 
@@ -19,7 +19,7 @@ class PredictTag(Resource):
     """Predict tag."""
     def get(self, title):
         """Get prediction."""
-        response = MODEL.predict_bayes(title)
+        response = m.predict_bayes(title)
         return response
 
 

@@ -35,14 +35,14 @@ class Model:
         self.cat_counts = {}
         self.attr_counts = {}
         self.attr_totals = {}
-        e = self.get_events('code/tagged.txt')
-        random.shuffle(e)
-        self.test = e[-500:]
-        self.events = e[:-500]
+        self.events = self.get_events('code/tagged.txt')
+        self.test = []
         self.prep_model()
 
     def test_model(self):
         """Test model."""
+        random.shuffle(self.events)
+        self.test = self.events[-500:]
         count = 0
         for i in self.test:
             if self.predict_bayes(i.name) == i.tag:
@@ -53,11 +53,8 @@ class Model:
     def prep_model(self):
         """Prepare model."""
         sw = STOP_WORDS_NLTK
-        # training_len = int(0.9 * float(len(self.events)))
 
-        # training, test = self.events[:training_len], self.events[training_len:]
-
-        (self.categories, self.cat_counts) = self.get_categories()
+        self.categories, self.cat_counts = self.get_categories()
         self.attr_counts = {}
         self.attr_totals = {}
         for cat in self.categories:

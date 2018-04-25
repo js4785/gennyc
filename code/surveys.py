@@ -1,24 +1,5 @@
 from wtforms import Form, fields, validators
 
-
-class SurveyTestQuestion(Form):
-    gender = fields.RadioField('What is your gender?',
-                               choices=[('M', 'Male'), ('F', 'Female'), ('O', 'I prefer not to answer')],
-                               validators=[validators.InputRequired()], default=('M', 'Male'))
-    age = fields.RadioField('What is your age?',
-                            choices=[('lt18', 'Younger than 18'), ('18-24', '18 to 24'), ('25-34', '25 to 34'),
-                                     ('35-44', '35 to 44'), ('45-54', '45 to 54'), ('55', '55 years or older')],
-                            validators=[validators.InputRequired()])
-    education = fields.RadioField('Which of the following best describes your highest education level?',
-                                  choices=[('Hsg', 'High school graduate'),
-                                           ('Scnd', 'Some college, no degree'), ('Assoc', 'Associates Degree'),
-                                           ('Bach', 'Bachelors degree'),
-                                           ('Grad', 'Graduate degree (Masters, Doctorate, etc.)'),
-                                           ('O', 'Other')],
-                                  validators=[validators.InputRequired()])
-    language = fields.StringField('What is your native language', validators=[validators.InputRequired()])
-
-
 class UserInterests(Form):
     hobbies = fields.SelectMultipleField('What are some of your hobbies and interests?',
                                         choices=[('hobbies-crafts', 'Arts & Crafts'),

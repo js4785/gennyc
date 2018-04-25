@@ -762,7 +762,10 @@ class GetEventRecs(Resource):
         response = []
         for event in events:
             event = Event(*event)
-            response.append(event.toJSON())
+            try:
+                response.append(event.toJSON())
+            except:
+                continue
         return response
 
 

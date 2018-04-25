@@ -1,10 +1,8 @@
 import logging
-from flask import Flask, render_template, redirect, url_for, request, make_response
+from flask import Flask
 app = Flask(__name__)
 app.debug = True
 
-# === APP CONFIGURATIONS
-app.config['SECRET_KEY'] = 'secretkey123984392032'
 from flask_restful import Resource, Api
 import predictor
 m = predictor.Model()

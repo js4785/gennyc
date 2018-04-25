@@ -41,8 +41,8 @@
     </ul>
     <div id="rec_container"></div>
     <ul class="pagination">
-      <li class="waves-effect"><a onclick="left()" href="#!"><i class="material-icons">chevron_left</i></a></li>
-      <li class="waves-effect"><a onclick="right()" href="#!"><i class="material-icons">chevron_right</i></a></li>
+      <li class="waves-effect"><a class="click-scroll-to-top" onclick="left()" href="#!"><i class="material-icons">chevron_left</i></a></li>
+      <li class="waves-effect"><a class="click-scroll-to-top" onclick="right()" href="#!"><i class="material-icons">chevron_right</i></a></li>
     </ul>
 
     <div id="filter_modal" class="modal filter">
@@ -71,13 +71,7 @@
     <div id="event_modal" class="modal event_popup">
       <div class="modal-content">
         <div id="curr_event_info">
-
         </div>
-        <!-- <br> -->
-
-        <!-- <div class="modal-footer">
-          <button onclick="applyFilters()" href="#" class="waves-effect waves-green btn-flat">Apply</a>
-        </div> -->
       </div>
     </div>
 
@@ -106,12 +100,6 @@
 
         var event = events[cur]
         if (event == null) break;
-        //
-        // document.getElementById("unique-link-" + cur).onclick = function fun() {
-        //
-        //     loadEventInfo(event.ename, event.start_date,
-        //                   event.end_date, event.lname, event.num_attending, event.description);
-        // }
 
         cur += 1
       }
@@ -325,6 +313,12 @@
         tag_checks[i].checked = checked
       }
     }
+
+    $('.click-scroll-to-top').click(function() {
+        $('html, body').animate({
+            scrollTop: $(".recommendations-header").offset().top
+        }, 500);
+    });
 
     ////////////////////////////////////////////////////////////////////////////
     // Map modal

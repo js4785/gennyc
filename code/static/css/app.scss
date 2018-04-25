@@ -126,6 +126,7 @@ form {
 .card.horizontal {
   .card-image {
     img {
+      max-height: 310px;
       height: 100%;
       width: 100%;
       object-fit: cover;
@@ -139,6 +140,10 @@ form {
   .modal-content {
     background: white;
   }
+}
+
+.modal#event_modal {
+    border-radius: 5px;
 }
 
 .mdl-modal {

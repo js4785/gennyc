@@ -1,23 +1,374 @@
 {% extends "base.html" %}
 {% block title %} Recommendations {% endblock %}
 {% block body %}
-<div class="mdl-page row">
+<div class="mdl-modal row">
   <div class="col s12">
 
-    <h2>Find your next experience.</h2>
+    <div id="map" class="modal">
+      <div class="modal-content">
+        <h6>Address</h6>
 
-    {% for interest in survey_results %}
-    <h3>You seem to like <font color="blue">{{ interest }}</font></h3>
-    <h4>Events that have to do with <font color="blue">{{ interest }}:</font></h4>
-    <br>
-    <ul>
-      {% for eid, ename, start_date, end_date, num_cap, num_attending, tag in events %}
+        <iframe class="map"
+                  width="100%"
+                  height="450px"
+                  frameborder="0"
+                  style="border:0">
+        </iframe>
+      </div>
+      <div class="modal-footer">
+        <a href="#!" class="modal-action modal-close waves-effect waves-green btn-flat">Close</a>
+      </div>
+    </div>
+
+    <h3 class="recommendations-header">Find your next experience.</h3>
+      {% if name != '' %}
+      <h6>Showing results for  <span class="interest">{{name}}</span></h6><br>
+      {% endif %}
+      <h6 style="font-weight: bold;"><a onclick="openFilters()" href="#">Filters</a></h6><br>
+
+    <!-- <form action="/search" method="POST">
+        <div class="small-10 columns">
+            <input type="text" placeholder="Search for an event" id="search" name="search" required/>
+        </div>
+    </form> -->
+    <div id="loading" style="visibility:visible" class="progress">
+        <div class="indeterminate"></div>
+    </div>
+    <ul class="pagination">
+      <li class="waves-effect"><a onclick="left()" href="#!"><i class="material-icons">chevron_left</i></a></li>
+      <li><a id="cur_page"></a></li>
+      <li class="waves-effect"><a onclick="right()" href="#!"><i class="material-icons">chevron_right</i></a></li>
+    </ul>
+    <div id="rec_container"></div>
+    <ul class="pagination">
+      <li class="waves-effect"><a onclick="left()" href="#!"><i class="material-icons">chevron_left</i></a></li>
+      <li class="waves-effect"><a onclick="right()" href="#!"><i class="material-icons">chevron_right</i></a></li>
+    </ul>
+
+    <div id="filter_modal" class="modal filter">
+      <div class="modal-content">
+        <h4>Filters</h4>
+        <br>
+        <p class="range-field">
+          <div id="range_value">10</div>
+          <input type="range" id="day_range" min="1" max="7" />
+        </p>
+        <div class="row" style="text-align: center;">
+          <div class="col s2">TAGS:</div>
+          <div class="col s2"><button href="#" onclick="selectAllTags(false)">NONE</button></div>
+          <div class="col s2"><button href="#" onclick="selectAllTags(true)">ALL</button></div>
+        </div>
+
+        <p id="tag_filters"></p>
+        <!-- <br> -->
+
+        <div class="modal-footer">
+          <button onclick="applyFilters()" href="#" class="waves-effect waves-green btn-flat">Apply</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- {% for interest in survey_results %} -->
+      <!--<h6>You seem to like <span class="interest">{{ interest }}</span></h6>-->
+
+    <!--<h6>Events that have to do with <span class="interest">{{ interest }}:</span></h6>-->
+      <!-- {% for eid, ename, description, start_date, end_date, num_cap, num_attending, lname, address_1, tag, lat, lon in events[:20] %}
       {% if tag == interest %}
-      <li>{{ename}}, {{start_date}} to {{end_date}}, {{num_attending}}/{{num_cap}} filled</li>
+      <br> -->
+
+      <!-- <div class="card horizontal">
+        <div class="card-image">
+          <img src="../static/img/{{ interest }}.jpg">
+        </div>
+        <div class="card-stacked">
+          <div class="card-content">
+            <ul>
+              <li><h6> {{start_date}} to {{end_date}}</h6></li>
+              <li><h6><a href="#{ename}" id="unique-link">{{ename}}</a></h6></li>
+              <li>{{num_attending}}/{{num_cap}} filled</li>
+            </ul>
+            <div id="recommendations" style="color: darkgrey; float: right;">Because you chose
+                <span class="interest">{{ interest }}</span>
+          </div>
+          </div>
+          <div class="card-action">
+            <a class="button modal-trigger" href="#map" data-latLng="{{ lat }}, {{lon}}">Address: {{ address_1 }}</a>
+          </div>
+        </div>
+      </div>
+
+      <div id="map" class="modal">
+        <div class="modal-content">
+          <h4>{{ lname }}</h4>
+          <p>{{ address_1 }}</p>
+
+          <iframe class="map"
+                    width="100%"
+                    height="450px"
+                    frameborder="0"
+                    style="border:0">
+          </iframe>
+        </div>
+        <div class="modal-footer">
+          <a href="#!" class="modal-action modal-close waves-effect waves-green btn-flat">Close</a>
+        </div>
+      </div>
+
+      <script type="text/javascript">
+      $(document).ready(function(){
+
+
+      }).on("click", ".button", function(e) {
+        e.preventDefault();
+        var latln = jQuery(this).attr("data-latLng");
+        console.log(latln)
+        initialize(latln);
+
+        function initialize(latln) {
+          var num = Number(latln)
+          console.log(num);
+
+          $('.map')
+          .attr('src',
+          'https://www.google.com/maps/embed/v1/place?key=AIzaSyDqQfmy2tRlFybt3yggtXeWbrKRLO91amA&q='+{{lat}}+","+{{lon}});
+        }
+
+      });
+
+      </script>
       {% endif %}
       {% endfor %}
-    </ul>
-    {% endfor %}
+
+    {% endfor %} -->
+
+    <!-- Script for event display -->
+    <script type="text/javascript">
+    $(document).ready(function() {
+      $('.modal').modal()
+    })
+
+    day_range = document.getElementById('day_range')
+    cur_filter = {days: 7, tags: []}
+
+    tag_set = new Set()
+    cur_p = 0
+    events = []
+    all_events = []
+
+    url = new URL(window.location.href);
+    group = url.searchParams.get("group");
+
+    function createRows(page) {
+      var container = document.getElementById('rec_container')
+      container.innerHTML = ''
+      var result = ''
+      var cur = page * 10;
+      while (cur < page*10+10) {
+      var event = events[cur]
+      if (event == null) break;
+      container.innerHTML += ('<br> \
+      <div class="card horizontal"> \
+        <div class="card-image"> \
+          <img src="../static/img/' + event.tag + '.jpg"> \
+        </div> \
+        <div class="card-stacked"> \
+          <div class="card-content"> \
+            <ul> \
+              <li><h6> '+event.start_date+' to '+event.end_date+'</h6></li> \
+              <li><h6><a href="#'+event.ename+'" id="unique-link">'+ event.ename +'</a></h6></li> \
+            </ul> \
+            <div id="recommendations" style="color: darkgrey; float: right;">Because you chose \
+                <span class="interest">'+event.tag+'</span> \
+          </div> \
+          </div> \
+          <div class="card-action"> \
+            <a class="button modal-trigger" href="#map" data-latLng="'+event.lon+', '+event.lat+'">Address: '+event.address_1+'</a> \
+          </div> \
+        </div> \
+      </div>')
+
+        cur += 1
+      }
+      return result
+    }
+
+    function getEvents() {
+      var xmlHttp = new XMLHttpRequest();
+
+      var url = 'api/get_event_recs'
+      if (group != null) {
+        url = 'api/get_group_event_recs/' + group
+      }
+
+      xmlHttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+          all_events = JSON.parse(this.response)
+          for (var i = 0; i < all_events.length; i++) {
+            all_events[i] = JSON.parse(all_events[i])
+            tag_set.add(all_events[i].tag)
+          }
+          addTagFilters()
+          filter()
+          showData()
+
+          var loader = document.getElementById('loading')
+          loader.style.visibility = 'hidden'
+        }
+      };
+      xmlHttp.open('GET', url, true)
+      xmlHttp.setRequestHeader('Content-Type', 'text/plain')
+      xmlHttp.send();
+
+    }
+
+    function addTagFilters() {
+      var tag_filters = document.getElementById('tag_filters')
+      tag_filters.innerHTML = ''
+      var tag_arr = Array.from(tag_set)
+      for (var i = 0; i < tag_arr.length; i++) {
+        // if (i % 3 == 0 && i !=0) tag_filters.innerHTML += '<div class="row">'
+        tag_filters.innerHTML += '<div class="col s3"><label><input id="'+tag_arr[i]+'" class="tagf" type="checkbox" checked="checked" /><span>'+tag_arr[i]+'</span></label></div>'
+      }
+      // tag_filters.innerHTML += '</div>'
+    }
+
+    function showPageNum() {
+      var page_num = document.getElementById('cur_page')
+      page_num.innerHTML = (cur_p+1) + ' / ' + (Math.ceil(events.length/10))
+    }
+
+    function left() {
+      if (cur_p == 0) return;
+      cur_p -=1
+      createRows(cur_p)
+      showPageNum()
+    }
+
+    function right() {
+      if (cur_p >= events.length/10 - 1) return;
+      cur_p +=1
+      createRows(cur_p)
+      showPageNum()
+    }
+
+    function openFilters() {
+      var elem = document.querySelector('.modal.filter')
+      var modal = M.Modal.getInstance(elem)
+
+      day_range.value = cur_filter.days
+      document.getElementById('range_value').textContent = day_range.value + ' days from now'
+
+      var tag_checks = document.getElementsByClassName('tagf')
+      for (var i = 0; i < tag_checks.length; i++) {
+        if (!cur_filter.tags.includes(tag_checks[i].id)) {
+          tag_checks[i].checked = true
+        }
+      }
+      modal.open()
+    }
+
+    function applyFilters() {
+      cur_filter.days = day_range.value
+      applyTagFilter()
+
+
+      filter()
+      showData()
+      closeFilters()
+    }
+
+    function applyTagFilter() {
+      filtered_tags = []
+      var tag_checks = document.getElementsByClassName('tagf')
+      for (var i = 0; i < tag_checks.length; i++) {
+        if (!tag_checks[i].checked) {
+          filtered_tags.push(tag_checks[i].id)
+        }
+      }
+      cur_filter.tags = filtered_tags
+    }
+
+    function filter() {
+      events = filterNumDays(cur_filter.days, all_events)
+      events = filterTags(cur_filter.tags, events)
+    }
+
+    function showData() {
+      cur_p = 0
+      createRows(cur_p)
+      showPageNum()
+    }
+
+    function filterNumDays(days, event_list) {
+      var ms = days * 86400000
+      var today = new Date()
+      var result = []
+      for (var i = 0; i < event_list.length; i++) {
+        var e = event_list[i]
+        var split_date = e.start_date.split(' ')
+        var date_string = split_date[0] + ' ' + split_date[1] + ', ' + today.getFullYear() + ' ' + split_date[2] + ' ' + split_date[3]
+        var e_date = new Date(date_string)
+        var diff_ms = (e_date - today)
+        if (diff_ms < ms && diff_ms > 0) {
+          result.push(event_list[i])
+        }
+      }
+      return result
+    }
+
+    function filterTags(tags, event_list) {
+      var result = []
+      for (var i = 0; i < event_list.length; i++) {
+        if (!tags.includes(event_list[i].tag))  {
+          result.push(event_list[i])
+        }
+      }
+      return result
+    }
+
+    function selectAllTags(checked) {
+      var tag_checks = document.getElementsByClassName('tagf')
+      for (var i = 0; i < tag_checks.length; i++) {
+        tag_checks[i].checked = checked
+      }
+    }
+
+    function closeFilters() {
+      var elem = document.querySelector('.modal.filter')
+      var modal = M.Modal.getInstance(elem)
+      modal.close()
+    }
+
+    getEvents()
+
+    day_range.addEventListener("change", function() {
+        document.getElementById("range_value").textContent = day_range.value + ' days from now';
+    }, false);
+
+    </script>
+
+    <!-- Script for map modal -->
+    <script async defer type="text/javascript">
+
+    $(document).ready(function(){
+        // $('#map').hide();
+    }).on("click", ".button", function(e) {
+        e.preventDefault();
+        var latln = jQuery(this).attr("data-latLng");
+        addr = (jQuery(this).text())
+        $('#map h6').text(addr)
+        initialize(latln);
+
+        function initialize(latln) {
+
+            var q = encodeURIComponent(latln);
+            $('.map')
+                .attr('src',
+                'https://www.google.com/maps/embed/v1/place?key=AIzaSyD4ktO39zvBjYwivGfae067lPW0BHAiUKs&q='+q);
+            // $('.map').show();
+        }
+    });
+    </script>
   </div>
 </div>
 

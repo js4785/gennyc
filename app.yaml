@@ -13,8 +13,16 @@ threadsafe: yes
 
 # Handlers define how to route requests to your application.
 handlers:
-- url: .*  # This regex directs all routes to main.app
+- url: /jobs/.*
+  script: code.jobs.app
+  login: admin
+- url: /api/model/.*
+  script: code.model_api.app
+- url: .*
   script: code.main.app
+- url: /static
+  static_dir: code/static
+  application_readable: true
 
 # [START env_variables]
 env_variables:

@@ -1,5 +1,6 @@
 import main
 import datetime
+from dateutil.parser import parse
 
 class User():
     def __init__(self, username, password, email=None, fname=None, lname=None, dob=None, timezone=None, email_verified=False):
@@ -14,7 +15,7 @@ class User():
         self.email = email
         self.fname = fname
         self.lname = lname
-        self.dob = dob
+        self.dob = self.proper_date(str(dob))
         self.timezone = timezone
         self.join_date = datetime.date.today()
         self.email_verified = email_verified;
@@ -28,11 +29,19 @@ class User():
         else:
             return False
 
+    def proper_date(self, date):
+        d = datetime.date.today()
+        try:
+            d = parse(date)
+        except ValueError:
+            pass
+        return str(d)
+
     def is_authenticated(self):
         return self.authenticated
 
     def is_active(self):
-        return True;
+        return True
 
     def is_anonymous(self):
         return False

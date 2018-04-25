@@ -787,7 +787,10 @@ class GetGroupEventRecs(Resource):
         response = []
         for event in events:
             event = Event(*event)
-            response.append(event.to_json())
+            try:
+                response.append(event.to_json())
+            except:
+                continue
         return response
 
 

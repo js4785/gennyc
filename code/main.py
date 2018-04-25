@@ -1,11 +1,13 @@
+"""Main application logic
+"""
 import datetime
 import logging
 import os
 
-import MySQLdb
 from flask import Flask, render_template, redirect, url_for, request
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
 from flask_restful import Resource, Api
+import MySQLdb
 import predictor
 
 import recommender
@@ -278,7 +280,6 @@ def recommend():
     if g_id is not None:
         group_id = g_id
         name = get_group_by_id(g_id)
-    print name
 
     return render_template("recommendations.html", g_id=group_id, name=name)
 
@@ -363,8 +364,8 @@ def user_is_tagged(user):
     result = query_for_survey(user)
     if result is None:
         return False
-    else:
-        return True
+
+    return True
 
 
 @app.route('/survey', methods=['GET', 'POST'])
@@ -471,7 +472,7 @@ def send_email(address, username):
     body = "Thank you for creating an account!\n\n" \
            "Please confirm your email address by clicking on the link below:" \
            "\n\n{}".format(confirmation_url)
-    print sender_address, address, subject, body
+    # print(sender_address, address, subject, body)
     mail.send_mail(sender_address, address, subject, body)
 
 
@@ -558,11 +559,9 @@ def add_group(group_name, users, new):
     cursor = database.cursor()
     cursor.execute('SELECT max(gid) from ' + ENV_DB + '.Groups')
     data = cursor.fetchone()
-    print data
     if data[0]:
         g_id = int(data[0])
 
-    print g_id
     if new:
         g_id += 1
         users.append(current_user.username)
@@ -648,8 +647,7 @@ class CheckValidUser(Resource):
         database.close()
         if data:
             return {}, 200
-        else:
-            return {}, 201
+        return {}, 201
 
 
 API.add_resource(CheckValidUser, '/api/validate_username/<string:username>')
@@ -681,8 +679,7 @@ class CheckValidUserExisting(Resource):
         data = cursor.fetchone()
         if data:
             return {}, 201
-        else:
-            return {}, 200
+        return {}, 200
 
 
 API.add_resource(CheckValidUserExisting,
@@ -711,8 +708,7 @@ class CheckValidGroupName(Resource):
         database.close()
         if data:
             return {}, 201
-        else:
-            return {}, 200
+        return {}, 200
 
 
 API.add_resource(CheckValidGroupName, '/api/validate_groupname/<string:group_name>')
@@ -815,11 +811,16 @@ API.add_resource(GetGroupInterests, '/api/get_group_interests/<string:group_id>'
 
 
 class PredictTag(Resource):
+    """Prediction tag."""
     def get(self, title):
-        m = predictor.Model()
-        response = m.predict_bayes(title)
+        """Predictor."""
+        model = predictor.Model()
+        response = model.predict_bayes(title)
         return response
+
+
 API.add_resource(PredictTag, '/api/predict_tag/<string:title>')
+
 
 @app.route('/profile')
 @login_required

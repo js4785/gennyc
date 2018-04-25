@@ -4,7 +4,7 @@
 import os
 import json
 import urllib2
-import datetime
+from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
 import MySQLdb
@@ -226,15 +226,16 @@ def add_events_limited(day):
     for url in urls:
         tmp = url[23:-1].split('/')
         tmp.remove('events')
-        (URLNAME, EVENT_ID) = tmp
+        (url_name, event_id) = tmp
         api_url = '{0}/{1}/events/{2}'.format(MEETUP_API_BASE,
-                                              URLNAME,
-                                              EVENT_ID)
+                                              url_name,
+                                              event_id)
         request = urllib2.Request(api_url + '?key=' + MEETUP_API_KEY,
                                   HEADERS=HEADERS)
         try:
             result = urllib2.urlopen(request)
-        except:
+        except Exception as e:
+            print("Exception", e)
             break
         status = result.getcode()
         if status == err:
@@ -250,7 +251,7 @@ def add_events_limited(day):
             continue
         tag = m.predict_bayes(ename)
 
-        success = add_event_from_info(db, event_info, EVENT_ID, tag)
+        success = add_event_from_info(db, event_info, event_id, tag)
         if success:
             added.append(ename + ', ' + tag)
 
@@ -319,7 +320,7 @@ def add_events(days):
     db.close()
 
 
-def add_event_from_info(db, event_info, EVENT_ID, tag):
+def add_event_from_info(db, event_info, event_id, tag):
     """Method to add event based on database information."""
 
     if 'description' not in event_info.keys():
@@ -329,7 +330,7 @@ def add_event_from_info(db, event_info, EVENT_ID, tag):
         if VERBOSE:
             print('Failure: event description too short \
                   (>={} chars needed)'.format(MIN_CHARS_DESC))
-        return
+        return False
 
     if 'name' in event_info.keys():
         ename = event_info['name']
@@ -359,9 +360,9 @@ def add_event_from_info(db, event_info, EVENT_ID, tag):
             address_1 = None
 
         if 'zip' in event_info['venue'].keys() and event_info['venue']['zip']:
-            zip = event_info['venue']['zip']
+            zipcode = event_info['venue']['zip']
         else:
-            zip = None
+            zipcode = None
 
         if 'city' in event_info['venue'].keys() and event_info['venue']['city']:
             city = event_info['venue']['city']
@@ -374,7 +375,7 @@ def add_event_from_info(db, event_info, EVENT_ID, tag):
         else:
             state = None
     else:
-        lname = lon = lat = address_1 = zip = city = state = None
+        lname = lon = lat = address_1 = zipcode = city = state = None
 
     if 'time' in event_info.keys() and event_info['time']:
         start_time = event_info['time']
@@ -407,7 +408,7 @@ def add_event_from_info(db, event_info, EVENT_ID, tag):
                       FROM Events
                       WHERE mid = %s
                     """,
-                   (EVENT_ID, ))
+                   (event_id, ))
 
     result = cursor.fetchone()
 
@@ -436,7 +437,7 @@ def add_event_from_info(db, event_info, EVENT_ID, tag):
         lon,
         lat,
         address_1,
-        zip,
+        zipcode,
         city,
         state,
         ))
@@ -449,11 +450,10 @@ def add_event_from_info(db, event_info, EVENT_ID, tag):
 
     lid = cursor.fetchone()
 
-    start_date = str(datetime.datetime.fromtimestamp(start_time / 1000))
+    start_date = str(datetime.fromtimestamp(start_time / 1000))
 
     if start_date and duration:
-        end_date = str(datetime.datetime.fromtimestamp((start_time
-                       + duration) / 1000))
+        end_date = str(datetime.fromtimestamp((start_time + duration) / 1000))
     else:
         end_date = None
 
@@ -472,7 +472,7 @@ def add_event_from_info(db, event_info, EVENT_ID, tag):
         0,
         lid,
         description.encode('ascii', 'ignore'),
-        EVENT_ID,
+        event_id,
         ))
 
     db.commit()

@@ -31,37 +31,15 @@ from py_ms_cognitive import PyMsCognitiveImageSearch
 login_manager = LoginManager()
 login_manager.init_app(app)
 
-# These environment variables are configured in app.yaml.
 CLOUDSQL_CONNECTION_NAME = os.environ.get('CLOUDSQL_CONNECTION_NAME')
 CLOUDSQL_USER = os.environ.get('CLOUDSQL_USER')
 CLOUDSQL_PASSWORD = os.environ.get('CLOUDSQL_PASSWORD')
 
-# CLOUDSQL_CONNECTION_NAME = "gennyc-dev:us-central1:mysqldev"
-# CLOUDSQL_USER = "kayvon"
-# CLOUDSQL_PASSWORD = "kayvon"
-
 DB_HOST_DEV = '35.193.223.145'
-# DB_HOST_DEV = "127.0.0.1" # Using for local setup
-
-# ENV = ''
-# if os.environ.get('BRANCH') != 'master':
-#     ENV = 'Dev'
-# else:
-#     ENV = 'Uat'
-#     CLOUDSQL_CONNECTION_NAME = 'gennyc-uat:us-central1:mysqluat'
-#
-
-
 ENV_DB = 'Dev'
-# print (os.environ.get('BRANCH'))
-
-# MOCK_EVENTS = [Event('Rollerblading Tour of Central Park', 2018, 3, 20, 'Join this fun NYC tour and get some exercise!'),
-                # Event('Rollerblading Tour of Central Park Round 2', 2018, 3, 22, 'Join this fun NYC tour and get some exercise again!')]
 
 api = Api(app)
-randomKey= '472389hewhuw873dsa4245193ej23yfehw'
-
-BING_KEY = "50e4e5baced54241a030d0f5b56bee7c"
+emailConfKey = '472389hewhuw873dsa4245193ej23yfehw'
 
 
 def connect_to_cloudsql():
@@ -84,9 +62,6 @@ def connect_to_cloudsql():
 
     return db
 
-# def auth_user_mock(user: User) -> bool:
-#     return user in MOCK_USERS
-
 
 def query_for_user(user):
     db = connect_to_cloudsql()
@@ -105,6 +80,7 @@ def authenticate_user(user):
         return True
     return False
 
+
 def get_user_from_username(user_name):
     db = connect_to_cloudsql()
     cursor = db.cursor()
@@ -113,12 +89,12 @@ def get_user_from_username(user_name):
     db.close()
     return data
 
+
 @login_manager.user_loader
 def load_user(user_name):
     data = get_user_from_username(user_name)
     if data is None:
         return None
-    # print(data, User(*data))
     return User(*data)
 
 
@@ -264,6 +240,7 @@ def helper_strip_date(e):
             e = tuple(e)
     return e
 
+
 def purge_user_tags(user):
     db = connect_to_cloudsql()
     cursor = db.cursor()
@@ -272,6 +249,7 @@ def purge_user_tags(user):
     cursor.execute(query)
     db.commit()
     db.close()
+
 
 def fill_user_tags(user, survey):
     db = connect_to_cloudsql()
@@ -372,7 +350,7 @@ def fill_event(user, event):
 
 
 def send_email(address, username):
-    confirmation_url = 'gennyc-dev.appspot.com/emailConf/{}/{}'.format(randomKey, username)
+    confirmation_url = 'gennyc-dev.appspot.com/emailConf/{}/{}'.format(emailConfKey, username)
     sender_address = (
         'genNYC <support@{}.appspotmail.com>'.format(
             app_identity.get_application_id()))
@@ -396,6 +374,7 @@ def confirm(key, username):
 
     return redirect(url_for('login'))
 
+
 def get_group_by_id(gid):
     db = connect_to_cloudsql()
     cursor = db.cursor()
@@ -404,6 +383,7 @@ def get_group_by_id(gid):
     data = cursor.fetchone()
     db.close()
     return data[0]
+
 
 def get_group_names(user):
     db = connect_to_cloudsql()
@@ -415,6 +395,7 @@ def get_group_names(user):
     db.close()
     return list((i[0],i[1]) for i in data)
 
+
 def get_group_members(group_name):
     db = connect_to_cloudsql()
     cursor = db.cursor()
@@ -423,6 +404,7 @@ def get_group_members(group_name):
     data = cursor.fetchall()
     db.close()
     return list(list((i[0], i[1], int(i[2]))) for i in data)
+
 
 def add_group(group_name, users, new):
     db = connect_to_cloudsql()
@@ -451,6 +433,7 @@ def add_group(group_name, users, new):
     db.commit()
     db.close()
 
+
 @app.route('/groups')
 @login_required
 def group():
@@ -458,7 +441,7 @@ def group():
         return redirect('verify')
     if not user_is_tagged(current_user):
         return redirect('survey')
-        
+
     groups = get_group_names(current_user)
     pending = {}
     accepted = {}
@@ -471,6 +454,7 @@ def group():
     username = current_user.username
     return render_template("group.html", pending=pending, accepted=accepted, user=username)
 
+
 class CreateGroup(Resource):
     def put(self, groupname, new_flag):
         users = request.args.getlist('users')
@@ -481,6 +465,7 @@ class CreateGroup(Resource):
         return {}, 200
 
 api.add_resource(CreateGroup, '/api/new_group/<string:groupname>/<string:new_flag>')
+
 
 class CheckValidUser(Resource):
     def get(self, username):
@@ -496,6 +481,7 @@ class CheckValidUser(Resource):
         else:
             return {}, 201
 api.add_resource(CheckValidUser, '/api/validate_username/<string:username>')
+
 
 class CheckValidUserExisting(Resource):
     def get(self, group, username):
@@ -515,6 +501,7 @@ class CheckValidUserExisting(Resource):
             return {}, 200
 api.add_resource(CheckValidUserExisting, '/api/validate_username/existing/<string:group>/<string:username>')
 
+
 class CheckValidGroupName(Resource):
     def get(self, group_name):
         if (group_name == ''):
@@ -530,6 +517,7 @@ class CheckValidGroupName(Resource):
             return {}, 200
 api.add_resource(CheckValidGroupName, '/api/validate_groupname/<string:group_name>')
 
+
 class RespondToRequest(Resource):
     def put(self, group_name, response):
         status = 1
@@ -544,6 +532,7 @@ class RespondToRequest(Resource):
         return {}, 200
 api.add_resource(RespondToRequest, '/api/respond_to_request/<string:group_name>/<string:response>')
 
+
 class GetEventRecs(Resource):
     def get(self):
         rec = recommender.Recommend(current_user)
@@ -556,6 +545,7 @@ class GetEventRecs(Resource):
             response.append(e.toJSON())
         return response
 api.add_resource(GetEventRecs, '/api/get_event_recs')
+
 
 class GetGroupEventRecs(Resource):
     def get(self, group_id):
@@ -570,6 +560,7 @@ class GetGroupEventRecs(Resource):
         return response
 api.add_resource(GetGroupEventRecs, '/api/get_group_event_recs/<string:group_id>')
 
+
 class GetGroupInterests(Resource):
     def get(self, group_id):
         rec = recommender.GroupRecommend(group_id)
@@ -577,10 +568,12 @@ class GetGroupInterests(Resource):
         return response
 api.add_resource(GetGroupInterests, '/api/get_group_interests/<string:group_id>')
 
+
 @app.route('/profile')
 @login_required
 def profile_home():
     return redirect('/profile/' + current_user.username)
+
 
 @app.route('/profile/<string:username>')
 @login_required
@@ -597,7 +590,6 @@ def profile(username):
     return render_template('profile.html', user=user, join_date=db_date_to_normal(user.join_date), tags=tags)
 
 
-
 @app.errorhandler(401)
 def page_not_found(e):
     error = 'You must be logged in to view this page.'
@@ -607,17 +599,6 @@ def page_not_found(e):
 def db_date_to_normal(db_date):
     return db_date.strftime("%B %d, %Y")
 
-
-def grab_tag_pictures(tags):
-    pass
-    # img_urls = {}
-    # for tag in tags:
-        # search_service = PyMsCognitiveImageSearch(BING_KEY, tag)
-
-        # img_result = search_service.search(limit=1, format='json') #1-50
-
-        # img_urls[tag] = img_result[0]['thumbnail_url']
-    # return img_urls
 
 if __name__ == '__main__':
     app.run(debug=True)

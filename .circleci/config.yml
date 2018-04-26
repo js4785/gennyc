@@ -26,6 +26,7 @@ jobs:
           name: Install Dependencies
           command: |
             echo $PYTHONPATH
+            apt-get upgrade --fix-missing
             apt-get update
             apt install -y unzip libmysqlclient-dev google-cloud-sdk-app-engine-python
             apt-get install google-cloud-sdk-app-engine-python-extras

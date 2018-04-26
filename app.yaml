@@ -27,8 +27,8 @@ handlers:
 # [START env_variables]
 env_variables:
     CLOUDSQL_CONNECTION_NAME_DEV: gennyc-dev:us-central1:mysqldev
-    CLOUDSQL_CONNECTION_NAME_UAT: gennyc-dev:us-central1:mysqluat
-    CLOUDSQL_CONNECTION_NAME_PROD: gennyc-dev:us-central1:mysqlprod
+    CLOUDSQL_CONNECTION_NAME_UAT: gennyc-uat:us-central1:mysqluat
+    CLOUDSQL_CONNECTION_NAME_PROD: gennyc-prod:us-central1:mysqlprod
     CLOUDSQL_USER: kayvon
     CLOUDSQL_PASSWORD: kayvon
 # [END env_variables]

@@ -26,6 +26,11 @@ INVALID_UNAME = 'wrong_uname'
 INVALID_PSSWD = 'wrong_psswd'
 VALID_UNUSED_UNAME = 'my_test_unique_uname'
 VALID_UNUSED_PSSWD = 'my_test_unique_psswd'
+VALID_UNUSED_EMAIL = 'my_test_fake_email@gmail.com'
+VALID_UNUSED_FNAME = 'my_fake_fname'
+VALID_UNUSED_LNAME = 'my_fake_lname'
+VALID_UNUSED_DOB   = '1970-01-01'
+VALID_UNUZED_TIME  = '(GMT -8:00) Pacific Time (US & Canada)'
 
 def teardown_new_user():
     database = main.connect_to_cloudsql()
@@ -113,18 +118,19 @@ class MainTest(unittest.TestCase):
             cursor.execute(query)
             data = cursor.fetchone()
 
-            assert data.username == VALID_UNUSED_UNAME
-            assert data.password == VALID_UNUSED_PSSWD
+            assert data[0] == VALID_UNUSED_UNAME
+            assert data[1] == VALID_UNUSED_PSSWD
+            teardown_new_user()
         except:
             # safely assume connect_to_cloudsql works, since
             # otherwise the insert would have failed
 
             # teardown procedure
-            pass
+            teardown_new_user()
 
-        teardown_new_user()
+            raise
 
-    def test_register_user(self):
+    def test_register_user_function(self):
         try:
             my_user = User( VALID_UNUSED_UNAME,
                             VALID_UNUSED_PSSWD )
@@ -138,20 +144,56 @@ class MainTest(unittest.TestCase):
             cursor.execute(query)
             data = cursor.fetchone()
 
-            assert data.username == VALID_UNUSED_UNAME
-            assert data.password == VALID_UNUSED_PSSWD
+            assert data[0] == VALID_UNUSED_UNAME
+            assert data[1] == VALID_UNUSED_PSSWD
+            teardown_new_user()
 
         except:
             # safely assume connect_to_cloudsql works, since
             # otherwise the insert would have failed
-            pass
+            teardown_new_user()
 
-        teardown_new_user()
+            raise
 
+    def login(self, username, password):
+        return self.app.post('/login', data=dict(
+            username=username,
+            password=password
+        ), follow_redirects=True)
 
+    def test_register_verify_endpoints(self):
+        try:
+            rv = self.app.get('/register')
+            assert b'Register' in rv.data
 
+            rv = self.app.post('/register', data=dict(
+                username=VALID_UNUSED_UNAME,
+                password=VALID_UNUSED_PSSWD,
+                email=VALID_UNUSED_EMAIL,
+                fname=VALID_UNUSED_FNAME,
+                lname=VALID_UNUSED_LNAME,
+                dob=VALID_UNUSED_DOB,
+                timezone=VALID_UNUZED_TIME
+            ), follow_redirects=True)
 
+            assert b'Please verify your email by clicking the link we sent.' in rv.data
 
+            rv = self.login(VALID_UNUSED_UNAME, VALID_UNUSED_PSSWD)
+
+            assert b'Please verify your email by clicking the link we sent.' in rv.data
+
+            rv = self.logout()
+            assert b'Login' in rv.data
+
+            teardown_new_user()
+
+            rv = self.login(VALID_UNUSED_UNAME, VALID_UNUSED_PSSWD)
+            assert b'Invalid Credentials' in rv.data
+
+        except:
+            teardown_new_user()
+            raise
+            
 
 if __name__ == '__main__':
     unittest.main()

@@ -18,8 +18,10 @@ from user_class import User
 try:
     from google.appengine.api import mail
     from google.appengine.api import app_identity
+    gae_imported = True
 except ImportError:
     logging.warning('google app engine unable to be imported')
+    gae_imported = False
 
 app = Flask(__name__)
 app.debug = True
@@ -195,7 +197,8 @@ def register():
 
         if register_user(new_user):
             login_user(new_user)
-            send_email(new_user.email, new_user.username)
+            if gae_imported:
+                send_email(new_user.email, new_user.username)
             return redirect(url_for('home'))
         else:
             error = 'Username taken.'
@@ -209,7 +212,7 @@ def verify():
 
     :return: HTML file for email verification.
     """
-    if request.method == 'POST':
+    if request.method == 'POST' and gae_imported:
         send_email(current_user.email, current_user.username)
     return render_template('verify_email.html')
 
@@ -469,7 +472,8 @@ def send_email(address, username):
            "Please confirm your email address by clicking on the link below:" \
            "\n\n{}".format(confirmation_url)
     # print(sender_address, address, subject, body)
-    mail.send_mail(sender_address, address, subject, body)
+    if gae_imported:
+        mail.send_mail(sender_address, address, subject, body)
 
 
 @app.route('/emailConf/<string:key>/<string:username>')

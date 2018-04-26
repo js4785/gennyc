@@ -1,0 +1,44 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html style='line-height:1.15;-ms-text-size-adjust:100%;-webkit-text-size-adjust:100%;-webkit-box-sizing:border-box;box-sizing:border-box;line-height:1.5;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif;font-weight:normal;color:rgba(0,0,0,0.87);height:100%;width:100%;'>
+  <head>
+  </head>
+  <body style="-webkit-box-sizing:inherit;box-sizing:inherit;margin:0;height:100%;width:100%;font-family:'Roboto', Helvetica, sans-serif;background:linear-gradient(rgba(255, 0, 0, 0), #00264691), url(&quot;../img/newyork.jpg&quot;) no-repeat fixed center center;background-size:cover;display:flex;min-height:100vh;flex-direction:column;">
+    <div class="mdl-modal row" style="-webkit-box-sizing:inherit;box-sizing:inherit;margin-left:auto;margin-right:auto;margin-bottom:20px;background-color:#ffffffe8;width:70%;border-radius:4px;padding:2rem 2rem 4rem 2rem;text-align:center;display:flex;flex-direction:column;align-items:center;margin:2rem auto;">
+      <div class="col s12" style="-webkit-box-sizing:inherit;box-sizing:inherit;float:left;-webkit-box-sizing:border-box;box-sizing:border-box;padding:0 .75rem;min-height:1px;width:100%;margin-left:auto;left:auto;right:auto;">
+        <h3 class="recommendations-header" style="-webkit-box-sizing:inherit;box-sizing:inherit;font-weight:400;line-height:1.3;font-size:2.92rem;line-height:110%;margin:1.9466666667rem 0 1.168rem 0;color:rgba(0, 0, 0, 0.8) !important;">Find your next experience.</h3>
+        {% for interest in survey_results %}
+        <br style="-webkit-box-sizing:inherit;box-sizing:inherit;">
+        <br style="-webkit-box-sizing:inherit;box-sizing:inherit;">
+        {% for eid, ename, description, category, start_date, end_date, num_cap, num_attending, lname, address_1, tag, lat, lon in events[:10] %}
+        {% if tag == interest %}
+        <div class="card horizontal" style="-webkit-box-sizing:inherit;box-sizing:inherit;-webkit-box-shadow:0 2px 2px 0 rgba(0,0,0,0.14),0 3px 1px -2px rgba(0,0,0,0.12),0 1px 5px 0 rgba(0,0,0,0.2);box-shadow:0 2px 2px 0 rgba(0,0,0,0.14),0 3px 1px -2px rgba(0,0,0,0.12),0 1px 5px 0 rgba(0,0,0,0.2);position:relative;margin:.5rem 0 1rem 0;background-color:#fff;-webkit-transition:-webkit-box-shadow .25s;transition:-webkit-box-shadow .25s;transition:box-shadow .25s;transition:box-shadow .25s, -webkit-box-shadow .25s;border-radius:2px;display:-webkit-box;display:-webkit-flex;display:-ms-flexbox;display:flex;">
+          <div class="card-image" style="-webkit-box-sizing:inherit;box-sizing:inherit;position:relative;max-width:50%;">
+            <img src="gennyc-dev.appspot.com/static/img/{{tag}}.jpg" style="-webkit-box-sizing:inherit;box-sizing:inherit;border-style:none;display:block;border-radius:2px 2px 0 0;position:relative;left:0;right:0;top:0;bottom:0;border-radius:2px 0 0 2px;max-width:100%;width:auto;height:100%;width:100%;object-fit:cover;">
+          </div>
+          <div class="card-stacked" style="-webkit-box-sizing:inherit;box-sizing:inherit;display:-webkit-box;display:-webkit-flex;display:-ms-flexbox;display:flex;-webkit-box-orient:vertical;-webkit-box-direction:normal;-webkit-flex-direction:column;-ms-flex-direction:column;flex-direction:column;-webkit-box-flex:1;-webkit-flex:1;-ms-flex:1;flex:1;position:relative;">
+            <div class="card-content" style="-webkit-box-sizing:inherit;box-sizing:inherit;padding:24px;border-radius:0 0 2px 2px;-webkit-box-flex:1;-webkit-flex-grow:1;-ms-flex-positive:1;flex-grow:1;">
+              <ul style="-webkit-box-sizing:inherit;box-sizing:inherit;padding-left:0;list-style-type:none;">
+                <li style="-webkit-box-sizing:inherit;box-sizing:inherit;padding-bottom:25px;list-style-type:none;">
+                  <h6 style="-webkit-box-sizing:inherit;box-sizing:inherit;font-weight:400;line-height:1.3;font-size:1.15rem;line-height:110%;margin:.7666666667rem 0 .46rem 0;color:rgba(0, 0, 0, 0.8) !important;"> {{start_date}} to {{end_date}}</h6>
+                </li>
+                <li style="-webkit-box-sizing:inherit;box-sizing:inherit;padding-bottom:25px;list-style-type:none;">
+                  <h6 style="-webkit-box-sizing:inherit;box-sizing:inherit;font-weight:400;line-height:1.3;font-size:1.15rem;line-height:110%;margin:.7666666667rem 0 .46rem 0;color:rgba(0, 0, 0, 0.8) !important;"><a href="#" id="unique-link" style="-webkit-box-sizing:inherit;box-sizing:inherit;background-color:transparent;-webkit-text-decoration-skip:objects;color:#039be5;-webkit-tap-highlight-color:transparent;text-decoration:none;font-weight:inherit;">{{ename}}</a></h6>
+                </li>
+                <li style="-webkit-box-sizing:inherit;box-sizing:inherit;padding-bottom:25px;list-style-type:none;">{{num_attending}}/{{num_cap}} filled</li>
+              </ul>
+              <div id="recommendations" style="-webkit-box-sizing:inherit;box-sizing:inherit;color: darkgrey; float: right;">Because you chose
+                    <span class="interest" style="-webkit-box-sizing:inherit;box-sizing:inherit;background:#1a87ab;border-radius:2px;color:white;padding:.25rem 1rem;">{{ interest }}</span>
+              </div>
+            </div>
+            <div class="card-action" style="-webkit-box-sizing:inherit;box-sizing:inherit;background-color:inherit;border-top:1px solid rgba(160,160,160,0.2);position:relative;padding:16px 24px;border-radius:0 0 2px 2px;">
+              <a class="button" href="#" data-latlng="{{ lat }}, {{lon}}" style="-webkit-box-sizing:inherit;box-sizing:inherit;background-color:transparent;-webkit-text-decoration-skip:objects;color:#039be5;-webkit-tap-highlight-color:transparent;text-decoration:none;color:#ffab40;margin-right:24px;-webkit-transition:color .3s ease;transition:color .3s ease;text-transform:uppercase;">Address: {{ address_1 }}</a>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+      {% endfor %}
+      </div>
+    </div>
+  </body>
+</html>

@@ -33,21 +33,24 @@ app.config['SECRET_KEY'] = 'secretkey123984392032'
 LOGIN_MANAGER = LoginManager()
 LOGIN_MANAGER.init_app(app)
 
-CLOUDSQL_CONNECTION_NAME = os.environ.get('CLOUDSQL_CONNECTION_NAME')
 CLOUDSQL_USER = os.environ.get('CLOUDSQL_USER')
 CLOUDSQL_PASSWORD = os.environ.get('CLOUDSQL_PASSWORD')
 
 if gae_imported:
     if GAE_APP_ID == "gennyc-dev":
         DB_HOST_DEV = '35.193.223.145'
+        CLOUDSQL_CONNECTION_NAME = os.environ.get('CLOUDSQL_CONNECTION_NAME_DEV')
     elif GAE_APP_ID == "gennyc-prod":
         DB_HOST_DEV = '35.225.218.123'
+        CLOUDSQL_CONNECTION_NAME = os.environ.get('CLOUDSQL_CONNECTION_NAME_PROD')
     elif GAE_APP_ID == "gennyc-uat":
         DB_HOST_DEV = '35.225.142.179'
+        CLOUDSQL_CONNECTION_NAME = os.environ.get('CLOUDSQL_CONNECTION_NAME_UAT')
     else:
         raise Exception('invalid project id')
 else:
     DB_HOST_DEV = '35.193.223.145'
+    CLOUDSQL_CONNECTION_NAME = os.environ.get('CLOUDSQL_CONNECTION_NAME_DEV')
 
 ENV_DB = 'Dev'
 DB_UNAME = 'kayvon'
@@ -641,7 +644,23 @@ class CreateGroup(Resource):
 
 API.add_resource(CreateGroup, '/api/new_group/<string:groupname>/<string:new_flag>')
 
+class DeleteGroup(Resource):
+    """Deletes group by name
 
+    """
+    def get(self, name):
+        """deletes the group
+
+        :param groupName: the name of the group
+        :return: none
+        """
+        database = connect_to_cloudsql()
+        cursor = database.cursor()
+        cursor.execute("DELETE FROM Groups WHERE groupName='" + name + "'")
+        database.commit()
+        return {}, 200
+
+API.add_resource(DeleteGroup, '/api/delete_group/<string:name>')
 
 class CheckValidUser(Resource):
     """This checks if the user is valid.
@@ -700,7 +719,7 @@ class CheckValidUserExisting(Resource):
 
 
 API.add_resource(CheckValidUserExisting,
-                 '/api/validate_username/existing/<string:group>/<string:username>')
+                 '/api/validate_username/existing/<string:group_name>/<string:username>')
 
 
 

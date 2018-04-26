@@ -193,7 +193,93 @@ class MainTest(unittest.TestCase):
         except:
             teardown_new_user()
             raise
-            
+
+    def test_recommendations_page(self):
+        self.login(VALID_UNAME, VALID_PSSWD)
+        rv = self.app.get('/recommendations')
+        assert b'Find your next experience' in rv.data
+        self.logout()
+
+    def test_groups(self):
+        self.login(VALID_UNAME, VALID_PSSWD)
+        rv = self.app.get('/groups')
+        assert b'Your Groups' in rv.data
+        assert b'test_group' in rv.data
+        self.logout()
+
+    def test_profile(self):
+        self.login(VALID_UNAME, VALID_PSSWD)
+        rv = self.app.get('/profile', follow_redirects=True)
+        assert b'James Shin' in rv.data
+        assert b'arts-culture' in rv.data
+        self.logout()
+
+    def test_interest_survey(self):
+        self.login(VALID_UNAME, VALID_PSSWD)
+        rv = self.app.get('/survey')
+        assert b'Your Interests' in rv.data
+        self.logout()
+
+    def test_post_interests(self):
+        self.login('kayvon', 'kayvon')
+        rv = self.app.post('/survey', data=dict(
+            hobbies='hobbies-crafts',
+            causes='beliefs',
+            fitness='sports-fitness',
+            arts_and_culture='arts-culture'
+        ), follow_redirects=True)
+        assert b'Find your next' in rv.data
+        rv = self.app.get('/profile', follow_redirects=True)
+        assert b'arts-culture' in rv.data
+        self.logout()
+
+    def test_get_group_interests(self):
+        rv = self.app.get('/api/get_group_interests/6')
+        assert b'beliefs' in rv.data
+        assert b'hobbies-crafts' in rv.data
+        assert b'sports-fitness' in rv.data
+
+    def test_get_group_recs(self):
+        rv = self.app.get('/api/get_group_event_recs/6')
+        assert b'beliefs' in rv.data
+        assert b'hobbies-crafts' in rv.data
+        assert b'sports-fitness' in rv.data
+
+    def test_get_user_recs(self):
+        self.login(VALID_UNAME, VALID_PSSWD)
+        rv = self.app.get('/api/get_event_recs')
+        assert b'beliefs' in rv.data
+        assert b'hobbies-crafts' in rv.data
+        assert b'sports-fitness' in rv.data
+        self.logout()
+
+    def test_group_functionality(self):
+        self.login(VALID_UNAME, VALID_PSSWD)
+        self.app.put('/api/new_group/test_group_test/true?users=kayvon')
+        rv = self.app.get('/groups')
+        assert b'test_group_test' in rv.data
+        rv = self.app.get('/api/validate_groupname/test_group_test')
+        assert rv.status_code == 201
+        self.logout()
+        self.login('kayvon', 'kayvon')
+        rv = self.app.put('/api/respond_to_request/test_group_test/accept')
+        assert rv.status_code == 200
+        rv = self.app.get('/api/validate_username/existing/test_group_test/kayvon')
+        assert rv.status_code == 201
+        rv = self.app.get('/api/delete_group/test_group_test')
+        assert rv.status_code == 200
+        self.logout()
+
+    def test_user_validate(self):
+        self.login(VALID_UNAME, VALID_PSSWD)
+        rv = self.app.get('/api/validate_username/test1')
+        assert rv.status_code == 201
+        rv = self.app.get('/api/validate_username/kayvon')
+        assert rv.status_code == 200
+        self.logout()
+
+
+
 
 if __name__ == '__main__':
     unittest.main()

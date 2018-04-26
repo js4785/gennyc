@@ -39,7 +39,7 @@ ENV_DB = 'Dev'
 DB_UNAME = 'kayvon'
 DB_PSSWD = 'kayvon'
 
-api = Api(app)
+API = Api(app)
 EMAILCONFKEY = '472389hewhuw873dsa4245193ej23yfehw'
 
 
@@ -107,19 +107,6 @@ def get_user_from_username(user_name):
     data = cursor.fetchone()
     database.close()
     return data
-
-
-@LOGIN_MANAGER.user_loader
-def load_user(user_name):
-    """Creates a User class from queried user information.
-
-    :param user_name: String username.
-    :return: New User object.
-    """
-    data = get_user_from_username(user_name)
-    if data is None:
-        return None
-    return User(*data)
 
 
 def insert_new_user(user):

@@ -18,6 +18,23 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.
 
 import main
 import unittest
+from user_class import User
+
+VALID_UNAME = 'test1'
+VALID_PSSWD = 'test1'
+INVALID_UNAME = 'wrong_uname'
+INVALID_PSSWD = 'wrong_psswd'
+VALID_UNUSED_UNAME = 'my_test_unique_uname'
+VALID_UNUSED_PSSWD = 'my_test_unique_psswd'
+
+def teardown_new_user():
+    database = main.connect_to_cloudsql()
+    cursor = database.cursor()
+    query = "DELETE FROM Users WHERE username = '" + VALID_UNUSED_UNAME + "'"
+
+    cursor.execute(query)
+    database.commit()
+    database.close()
 
 class MainTest(unittest.TestCase):
     """This class uses the Flask tests app to run an integration test against a
@@ -26,7 +43,7 @@ class MainTest(unittest.TestCase):
     def setUp(self):
         self.app = main.app.test_client()
 
-    def test_hello_world(self):
+    def test_front_page(self):
         rv = self.app.get('/')
         assert b'explore your city' in rv.data
 
@@ -40,15 +57,99 @@ class MainTest(unittest.TestCase):
         return self.app.get('/logout', follow_redirects=True)
 
     def test_login_logout(self):
-        rv = self.login('kayvon', 'kayvon')
+        rv = self.login(VALID_UNAME, VALID_PSSWD)
         assert b'Search' in rv.data
         rv = self.logout()
         assert b'Login' in rv.data
-        rv = self.login('kayvon', 'wrong_pswd')
+        rv = self.login(VALID_UNAME, INVALID_PSSWD)
         assert b'Login' in rv.data
         assert b'Error' in rv.data
-        rv = self.login('wrong_usr', 'kayvon')
+        rv = self.login(INVALID_UNAME, VALID_PSSWD)
         assert b'Error' in rv.data
+
+    def test_connect_to_cloudsql():
+        db = main.connect_to_cloudsql()
+        cursor = db.cursor()
+        cursor.execute("SELECT DATABASE();")
+        data = cursor.fetchone()
+        db.close()
+        assert data == "Dev"
+
+    def test_query_for_user(user):
+        my_user = User(VALID_UNAME, VALID_PSSWD)
+        rv = main.query_for_user(my_user)
+        assert rv is not None
+
+        my_user = User(INVALID_UNAME, INVALID_PSSWD)
+        rv = main.query_for_user(my_user)
+        assert rv is None
+
+    def test_authenticate_user():
+        my_user = User(VALID_UNAME, VALID_PSSWD)
+        rv = main.authenticate_user(my_user)
+        assert rv == True
+
+        my_user = User(INVALID_UNAME, INVALID_PSSWD)
+        rv = main.authenticate_user(my_user)
+        assert rv == False
+
+    def test_get_user_from_username():
+        my_user = User(VALID_UNAME, VALID_PSSWD)
+        rv = main.get_user_from_username(my_user)
+        assert rv.password == VALID_PSSWD
+        assert rv.username == VALID_UNAME
+
+    def test_insert_new_user():
+        try:
+            my_user = User( VALID_UNUSED_UNAME,
+                            VALID_UNUSED_PSSWD )
+
+            main.insert_new_user(my_user)
+
+            database = main.connect_to_cloudsql()
+            cursor = database.cursor()
+            query = "SELECT username, password FROM Users WHERE username = '" + VALID_UNUSED_UNAME + "' AND password = '" + VALID_UNUSED_PSSWD + "'"
+
+            cursor.execute(query)
+            data = cursor.fetchone()
+
+            assert data.username == VALID_UNUSED_UNAME
+            assert data.password == VALID_UNUSED_PSSWD
+        except:
+            # safely assume connect_to_cloudsql works, since
+            # otherwise the insert would have failed
+
+            # teardown procedure
+            pass
+
+        teardown_new_user()
+
+    def test_register_user():
+        try:
+            my_user = User( VALID_UNUSED_UNAME,
+                            VALID_UNUSED_PSSWD )
+
+            main.register_user(my_user)
+
+            database = main.connect_to_cloudsql()
+            cursor = database.cursor()
+            query = "SELECT username, password FROM Users WHERE username = '" + VALID_UNUSED_UNAME + "' AND password = '" + VALID_UNUSED_PSSWD + "'"
+
+            cursor.execute(query)
+            data = cursor.fetchone()
+
+            assert data.username == VALID_UNUSED_UNAME
+            assert data.password == VALID_UNUSED_PSSWD
+
+        except:
+            # safely assume connect_to_cloudsql works, since
+            # otherwise the insert would have failed
+            pass
+
+        teardown_new_user()
+
+
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,0 +1,386 @@
+{% extends "base.html" %}
+{% block title %} Groups {% endblock %}
+{% block body %}
+
+<div class="container">
+  <div id="loading" style="visibility:hidden" class="progress">
+      <div class="indeterminate"></div>
+  </div>
+  {% if accepted|length > 0 %}
+  <div class="section">
+    <h5>Your Groups</h5>
+
+    {% for group in accepted %}
+      <div class="col s12">
+        <div class="card">
+          <div class="card-content">
+            <span class="card-title"><a href="#" onclick='showGroup("{{group}}", "{{accepted[group]}}")'>{{group}}</a></span>
+            <p>
+              {% for username, creator, gid in accepted[group] %}
+                {% if creator == 1 and username != user %}
+                  made by <a href="/profile/{{username}}">{{username}}</a>
+                {% endif %}
+              {% endfor %}
+            </p>
+          </div>
+          <div class="card-action">
+            {% for member, creator, gid in accepted[group]  %}
+            {% if  member == user and creator == 1%}
+              <a onclick="cur_group='{{group}}';newEditModal()" href="#modal2" class="modal-trigger">Add users</a>
+            {% endif %}
+            {% endfor %}
+            <a href="/recommendations?group={{accepted[group][0][2]}}">See recommendations</a>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% if pending|length > 0 %}
+  <div class="divider"></div>
+  <div class="section">
+    <h5>Pending Groups</h5>
+
+    {% for group in pending %}
+
+      <div class="col s12">
+        <div class="card">
+          <div class="card-content">
+            <span class="card-title"><a href="#" onclick='showGroup("{{group}}", "{{pending[group]}}")'>{{group}}</a></span>
+            <p>
+              {% for username, creator, gid in pending[group] %}
+                {% if creator == 1 %}
+                  sent from <a href="/profile/{{username}}">{{username}}</a>
+                {% endif %}
+              {% endfor %}
+            </p>
+          </div>
+          <div class="card-action">
+            <a onclick="acceptGroup('{{group}}')" href="#">Accept</a>
+            <a onclick="rejectGroup('{{group}}')" href="#">Reject</a>
+            <!-- <a href="#">See recommendations</a> -->
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if (pending|length == 0) and  (accepted|length == 0) %}
+  <div class="section"><h5>You have no groups yet</h5></div>
+  {% endif %}
+
+  <div class="divider"></div>
+  <div style="text-align:center" class="section">
+    <a onclick="newgroup()" href="#modal1" title="create a new group" class="btn-floating btn-large waves-effect waves-light blue-grey modal-trigger"><i class="material-icons">add</i></a>
+  </div>
+
+  <div id="modal3" class="modal group_info">
+    <div class="modal-content">
+      <h4 id="group_name_modal">Name</h4>
+      <h6>Members:</h6>
+      <div id="members_container"></div>
+      <br>
+      <h6>Common Interests:</h6>
+      <div id="loading_ints" style="visibility:visible" class="progress">
+          <div class="indeterminate"></div>
+      </div>
+      <div class="row" id="interests_container"></div>
+    </div>
+  </div>
+
+  <div id="modal2" class="modal add">
+    <div class="modal-content">
+      <h4>Add users to group</h4>
+      <br>
+      <div class="row">
+        <div class="input-field col s4">
+          <input id="username_ed" type="text">
+          <label for="username_ed">add by username</label>
+
+        </div>
+        <div class="col s4">
+          <a onclick="add_user_edit_group()" title="add" class="btn-floating btn-large waves-effect waves-light blue-grey"><i class="material-icons">add</i></a>
+        </div>
+        <div style="color:red" id="edit_users_error" class="col s4"></div>
+      </div>
+      <div id="group_users_container_ed"></div>
+    </div>
+
+    <div class="modal-footer">
+      <button onclick="addUsers()" href="#" class="waves-effect waves-green btn-flat">Add</a>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal1" class="modal create">
+    <div class="modal-content">
+      <h4>Create group</h4>
+      <br>
+
+      <div class="input-field col s6" style="width:50%">
+        <input id="groupname_ng" type="text">
+        <label for="groupname_ng">group name</label>
+      </div>
+      <div class="row">
+        <div class="input-field col s4">
+          <input id="username_ng" type="text">
+          <label for="username_ng">add by username</label>
+        </div>
+        <div class="col s4">
+          <a onclick="add_user_new_group()" title="add" class="btn-floating btn-large waves-effect waves-light blue-grey"><i class="material-icons">add</i></a>
+        </div>
+        <div style="color:red" id="modal_ng_error" class="col s4"></div>
+      </div>
+      <div id="group_users_container"></div>
+      <div class="modal-footer">
+        <button onclick="createGroup()" href="#" class="waves-effect waves-green btn-flat">Create</a>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script type=text/javascript>
+    $(document).ready(function(){
+      $('.modal').modal();
+    });
+
+    var ng_usernames = []
+    var add_usernames = []
+    var cur_group = ''
+
+    function add_user_new_group() {
+      var input = document.getElementById('username_ng')
+      var error = document.getElementById('modal_ng_error')
+      var container = document.getElementById('group_users_container')
+      if (!ng_usernames.includes(input.value) && input.value != '') {
+        var xmlHttp = new XMLHttpRequest();
+        xmlHttp.onreadystatechange = function() {
+          if (this.readyState == 4) {
+            if (this.status == 200) {
+              ng_usernames.push(input.value)
+              renderUsernames(container)
+              input.value = ''
+              error.innerHTML = ''
+            } else {
+              console.log('error user name bad')
+              error.innerHTML = "sorry, we weren't able to add that username"
+            }
+          }
+        };
+        url = 'api/validate_username/' + input.value
+        xmlHttp.open('GET', url, true)
+        xmlHttp.setRequestHeader('Content-Type', 'text/plain')
+        xmlHttp.send();
+      }
+    }
+
+    function newgroup() {
+      ng_usernames = []
+      var container = document.getElementById('group_users_container')
+      renderUsernames(container)
+    }
+
+    function newEditModal() {
+      add_usernames = []
+      var container = document.getElementById('group_users_container_ed')
+      renderUsernames(container)
+    }
+
+    function renderUsernames(container) {
+      var injected_html = ""
+      for (var i = 0; i < ng_usernames.length; i++) {
+        injected_html += "<div class='row'>" + ng_usernames[i] + "</div>"
+      }
+      container.innerHTML = injected_html
+    }
+
+
+    function addGroup() {
+      var loader = document.getElementById('loading')
+      var groupName = document.getElementById('groupname_ng')
+      var xmlHttp = new XMLHttpRequest();
+      var url = 'api/new_group/' + String(groupName.value) + '/true?'
+      for (var i = 0; i < ng_usernames.length; i++) {
+        url += ('&users=' + String(ng_usernames[i]))
+        console.log(url)
+      }
+      console.log(url)
+      xmlHttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+          loader.style.visibility = 'visible'
+          window.location.href = '/groups'
+
+        }
+      };
+      xmlHttp.open('PUT', url, true)
+      xmlHttp.setRequestHeader('Content-Type', 'text/plain')
+      xmlHttp.send();
+
+    }
+
+    function createGroup() {
+      var groupName = document.getElementById('groupname_ng').value
+      var error = document.getElementById('modal_ng_error')
+      if (ng_usernames.length == 0) {
+        error.innerHTML = "add some users to your group"
+        return
+      }
+      if (groupName == '') {
+        error.innerHTML = "create a name for your group"
+        return
+      }
+      var elem = document.querySelector('.modal.create')
+      var modal = M.Modal.getInstance(elem)
+      var xmlHttp = new XMLHttpRequest();
+      xmlHttp.onreadystatechange = function() {
+        if (this.readyState == 4) {
+          if (this.status == 200) {
+            addGroup()
+            error.innerHTML = ""
+            modal.close()
+          } else {
+            console.log('error group name bad')
+            error.innerHTML = "pick a new group name"
+          }
+        }
+      };
+      url = 'api/validate_groupname/' + groupName
+      xmlHttp.open('GET', url, true)
+      xmlHttp.setRequestHeader('Content-Type', 'text/plain')
+      xmlHttp.send();
+    }
+
+    function acceptGroup(groupName) {
+      var xmlHttp = new XMLHttpRequest();
+      xmlHttp.onreadystatechange = function() {
+        if (this.readyState == 4) {
+          if (this.status == 200) {
+            window.location.href = '/groups'
+            console.log('done')
+          }
+        }
+      };
+      url = 'api/respond_to_request/' + groupName + '/' + 'accept'
+      xmlHttp.open('PUT', url, true)
+      xmlHttp.setRequestHeader('Content-Type', 'text/plain')
+      xmlHttp.send();
+    }
+
+    function rejectGroup(groupName) {
+      var xmlHttp = new XMLHttpRequest();
+      xmlHttp.onreadystatechange = function() {
+        if (this.readyState == 4) {
+          if (this.status == 200) {
+            window.location.href = '/groups'
+            console.log('done')
+          }
+        }
+      };
+      url = 'api/respond_to_request/' + groupName + '/' + 'reject'
+      xmlHttp.open('PUT', url, true)
+      xmlHttp.setRequestHeader('Content-Type', 'text/plain')
+      xmlHttp.send();
+    }
+
+    function add_user_edit_group() {
+      var input = document.getElementById('username_ed')
+      var error = document.getElementById('edit_users_error')
+      var container = document.getElementById('group_users_container_ed')
+      if (!add_usernames.includes(input.value) && input.value != '') {
+        var xmlHttp = new XMLHttpRequest();
+        xmlHttp.onreadystatechange = function() {
+          if (this.readyState == 4) {
+            if (this.status == 200) {
+              add_usernames.push(input.value)
+              var injected_html = ""
+              for (var i = 0; i < add_usernames.length; i++) {
+                injected_html += "<div class='row'>" + add_usernames[i] + "</div>"
+              }
+              container.innerHTML = injected_html
+              input.value = ''
+              error.innerHTML = ''
+            } else {
+              console.log('error user name bad')
+              error.innerHTML = "sorry, we weren't able to add that username"
+            }
+          }
+        };
+        url = 'api/validate_username/existing/' + cur_group + '/' + input.value
+        xmlHttp.open('GET', url, true)
+        xmlHttp.setRequestHeader('Content-Type', 'text/plain')
+        xmlHttp.send();
+      }
+    }
+
+    function addUsers() {
+      var error = document.getElementById('edit_users_error')
+      if (add_usernames.length == 0) {
+        error.innerHTML = "add some users to your group"
+        return
+      }
+      var elem = document.querySelector('.modal.add')
+      var modal = M.Modal.getInstance(elem)
+      var xmlHttp = new XMLHttpRequest();
+      var url = 'api/new_group/' + cur_group + '/false?'
+      for (var i = 0; i < add_usernames.length; i++) {
+        url += ('&users=' + String(add_usernames[i]))
+      }
+      console.log (url)
+      xmlHttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+           window.location.href = '/groups'
+           modal.close()
+        }
+      };
+      xmlHttp.open('PUT', url, true)
+      xmlHttp.setRequestHeader('Content-Type', 'text/plain')
+      xmlHttp.send();
+    }
+
+    function showGroup(group_name, members) {
+      interest_loader = document.getElementById('loading_ints')
+      interest_loader.style.visibility = 'visible'
+      members = members.replace(/'/g, '"');
+      mem_list = JSON.parse(members)
+      var title = document.getElementById('group_name_modal')
+      title.innerHTML = group_name
+      var list_container = document.getElementById('members_container')
+      list_container.innerHTML = ''
+      for (var i = 0; i < mem_list.length; i++) {
+        tuple = mem_list[i]
+        member = tuple[0]
+        list_container.innerHTML += ('<a href="/profile/'+member+'">'+member+'</a><br>')
+      }
+      int_container = document.getElementById('interests_container')
+      int_container.innerHTML = ''
+
+      var xmlHttp = new XMLHttpRequest();
+      var url = 'api/get_group_interests/' + mem_list[0][2]
+      xmlHttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+           console.log(this.response)
+           var ints = JSON.parse(this.response)
+           for (var i = 0; i < ints.length; i++) {
+             console.log(ints[i])
+             int_container.innerHTML += '<div style="padding:10px" class="col s3"><span class="interest">' + ints[i] + '</span></div>'
+           }
+           interest_loader.style.visibility = 'hidden'
+        }
+      };
+      xmlHttp.open('GET', url, true)
+      xmlHttp.setRequestHeader('Content-Type', 'text/plain')
+      xmlHttp.send();
+
+      var elem = document.querySelector('.modal.group_info')
+      var modal = M.Modal.getInstance(elem)
+      modal.open()
+    }
+
+  </script>
+
+</div>
+
+
+{% endblock %}

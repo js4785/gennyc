@@ -10,19 +10,32 @@ import jinja2
 from flask_restful import Resource, Api
 import recommender
 from user_class import User
-# from surveys import UserInterests
-# from event import Event, EventForm
-# from flask_login import LoginManager, login_required, login_user, \
-    # logout_user, current_user
 import data_retrieval_job as dr
 import MySQLdb
+from main import connect_to_cloudsql
 
 try:
     from google.appengine.api import mail
     from google.appengine.api import app_identity
     from google.appengine.api import taskqueue
+    gae_imported = True
 except ImportError:
     logging.warning('google app engine unable to be imported')
+    gae_imported = False
+
+if gae_imported:
+    if GAE_APP_ID == "gennyc-dev":
+        DB_HOST_DEV = '35.193.223.145'
+    elif GAE_APP_ID == "gennyc-prod":
+        DB_HOST_DEV = '35.225.218.123'
+    elif GAE_APP_ID == "gennyc-uat":
+        DB_HOST_DEV = '35.225.142.179'
+    else:
+        raise Exception('invalid project id')
+else:
+    DB_HOST_DEV = '35.193.223.145'
+
+# DB_HOST_DEV = "127.0.0.1" # Using for local setup
 
 app = Flask(__name__)
 app.debug = True
@@ -37,38 +50,12 @@ CLOUDSQL_CONNECTION_NAME = os.environ.get('CLOUDSQL_CONNECTION_NAME')
 CLOUDSQL_USER = os.environ.get('CLOUDSQL_USER')
 CLOUDSQL_PASSWORD = os.environ.get('CLOUDSQL_PASSWORD')
 
-DB_HOST_DEV = '35.193.223.145'
-# DB_HOST_DEV = "127.0.0.1" # Using for local setup
 
 ENV_DB = 'Dev'
 
 # print (os.environ.get('BRANCH'))
 api = Api(app)
 RANDOM_KEY = '472389hewhuw873dsa4245193ej23yfehw'
-
-
-def connect_to_cloudsql():
-    """Connect to cloudSQL db."""
-    # When deployed to App Engine, the `SERVER_SOFTWARE` environment variable
-    # will be set to 'Google App Engine/version'.
-
-    if os.getenv('SERVER_SOFTWARE', '').startswith('Google App Engine/'):
-
-        # Connect using the unix socket located at
-        # /cloudsql/cloudsql-connection-name.
-
-        cloudsql_unix_socket = os.path.join('/cloudsql',
-                                            CLOUDSQL_CONNECTION_NAME)
-
-        db = MySQLdb.connect(unix_socket=cloudsql_unix_socket,
-                             user=CLOUDSQL_USER,
-                             passwd=CLOUDSQL_PASSWORD)
-    else:
-
-        db = MySQLdb.connect(host=DB_HOST_DEV, user='kayvon',
-                             passwd='kayvon', db='Dev', port=3306)
-
-    return db
 
 
 class PopulateEventsTable(Resource):

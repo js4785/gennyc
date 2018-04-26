@@ -59,7 +59,8 @@ def connect_to_cloudsql():
         database = MySQLdb.connect(
             unix_socket=cloudsql_unix_socket,
             user=CLOUDSQL_USER,
-            passwd=CLOUDSQL_PASSWORD)
+            passwd=CLOUDSQL_PASSWORD,
+            db=ENV_DB)
 
     else:
         database = MySQLdb.connect(

@@ -644,7 +644,23 @@ class CreateGroup(Resource):
 
 API.add_resource(CreateGroup, '/api/new_group/<string:groupname>/<string:new_flag>')
 
+class DeleteGroup(Resource):
+    """Deletes group by name
 
+    """
+    def get(self, name):
+        """deletes the group
+
+        :param groupName: the name of the group
+        :return: none
+        """
+        database = connect_to_cloudsql()
+        cursor = database.cursor()
+        cursor.execute("DELETE FROM Groups WHERE groupName='" + name + "'")
+        database.commit()
+        return {}, 200
+
+API.add_resource(DeleteGroup, '/api/delete_group/<string:name>')
 
 class CheckValidUser(Resource):
     """This checks if the user is valid.
@@ -703,7 +719,7 @@ class CheckValidUserExisting(Resource):
 
 
 API.add_resource(CheckValidUserExisting,
-                 '/api/validate_username/existing/<string:group>/<string:username>')
+                 '/api/validate_username/existing/<string:group_name>/<string:username>')
 
 
 

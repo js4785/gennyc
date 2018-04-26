@@ -41,8 +41,8 @@
     </ul>
     <div id="rec_container"></div>
     <ul class="pagination">
-      <li class="waves-effect"><a onclick="left()" href="#!"><i class="material-icons">chevron_left</i></a></li>
-      <li class="waves-effect"><a onclick="right()" href="#!"><i class="material-icons">chevron_right</i></a></li>
+      <li class="waves-effect"><a class="click-scroll-to-top" onclick="left()" href="#!"><i class="material-icons">chevron_left</i></a></li>
+      <li class="waves-effect"><a class="click-scroll-to-top" onclick="right()" href="#!"><i class="material-icons">chevron_right</i></a></li>
     </ul>
 
     <div id="filter_modal" class="modal filter">
@@ -68,78 +68,12 @@
       </div>
     </div>
 
-    <!-- {% for interest in survey_results %} -->
-      <!--<h6>You seem to like <span class="interest">{{ interest }}</span></h6>-->
-
-    <!--<h6>Events that have to do with <span class="interest">{{ interest }}:</span></h6>-->
-      <!-- {% for eid, ename, description, start_date, end_date, num_cap, num_attending, lname, address_1, tag, lat, lon in events[:20] %}
-      {% if tag == interest %}
-      <br> -->
-
-      <!-- <div class="card horizontal">
-        <div class="card-image">
-          <img src="../static/img/{{ interest }}.jpg">
-        </div>
-        <div class="card-stacked">
-          <div class="card-content">
-            <ul>
-              <li><h6> {{start_date}} to {{end_date}}</h6></li>
-              <li><h6><a href="#{ename}" id="unique-link">{{ename}}</a></h6></li>
-              <li>{{num_attending}}/{{num_cap}} filled</li>
-            </ul>
-            <div id="recommendations" style="color: darkgrey; float: right;">Because you chose
-                <span class="interest">{{ interest }}</span>
-          </div>
-          </div>
-          <div class="card-action">
-            <a class="button modal-trigger" href="#map" data-latLng="{{ lat }}, {{lon}}">Address: {{ address_1 }}</a>
-          </div>
+    <div id="event_modal" class="modal event_popup">
+      <div class="modal-content">
+        <div id="curr_event_info">
         </div>
       </div>
-
-      <div id="map" class="modal">
-        <div class="modal-content">
-          <h4>{{ lname }}</h4>
-          <p>{{ address_1 }}</p>
-
-          <iframe class="map"
-                    width="100%"
-                    height="450px"
-                    frameborder="0"
-                    style="border:0">
-          </iframe>
-        </div>
-        <div class="modal-footer">
-          <a href="#!" class="modal-action modal-close waves-effect waves-green btn-flat">Close</a>
-        </div>
-      </div>
-
-      <script type="text/javascript">
-      $(document).ready(function(){
-
-
-      }).on("click", ".button", function(e) {
-        e.preventDefault();
-        var latln = jQuery(this).attr("data-latLng");
-        console.log(latln)
-        initialize(latln);
-
-        function initialize(latln) {
-          var num = Number(latln)
-          console.log(num);
-
-          $('.map')
-          .attr('src',
-          'https://www.google.com/maps/embed/v1/place?key=AIzaSyDqQfmy2tRlFybt3yggtXeWbrKRLO91amA&q='+{{lat}}+","+{{lon}});
-        }
-
-      });
-
-      </script>
-      {% endif %}
-      {% endfor %}
-
-    {% endfor %} -->
+    </div>
 
     <!-- Script for event display -->
     <script type="text/javascript">
@@ -158,38 +92,49 @@
     url = new URL(window.location.href);
     group = url.searchParams.get("group");
 
-    function createRows(page) {
+
+    function addEventClickListeners(page) {
       var container = document.getElementById('rec_container')
-      container.innerHTML = ''
-      var result = ''
       var cur = page * 10;
-      while (cur < page*10+10) {
-      var event = events[cur]
-      if (event == null) break;
-      container.innerHTML += ('<br> \
-      <div class="card horizontal"> \
-        <div class="card-image"> \
-          <img src="../static/img/' + event.tag + '.jpg"> \
-        </div> \
-        <div class="card-stacked"> \
-          <div class="card-content"> \
-            <ul> \
-              <li><h6> '+event.start_date+' to '+event.end_date+'</h6></li> \
-              <li><h6><a href="#'+event.ename+'" id="unique-link">'+ event.ename +'</a></h6></li> \
-            </ul> \
-            <div id="recommendations" style="color: darkgrey; float: right;">Because you chose \
-                <span class="interest">'+event.tag+'</span> \
-          </div> \
-          </div> \
-          <div class="card-action"> \
-            <a class="button modal-trigger" href="#map" data-latLng="'+event.lon+', '+event.lat+'">Address: '+event.address_1+'</a> \
-          </div> \
-        </div> \
-      </div>')
+      while (cur < page * 10 + 10) {
+
+        var event = events[cur]
+        if (event == null) break;
 
         cur += 1
       }
-      return result
+    }
+
+    function createRows(page) {
+      var container = document.getElementById('rec_container')
+      container.innerHTML = ''
+      var cur = page * 10;
+      while (cur < page * 10 + 10) {
+        var event = events[cur]
+        if (event == null) break;
+        container.innerHTML += ('<br> \
+          <div class="card horizontal"> \
+            <div class="card-image"> \
+              <img src="../static/img/' + event.tag + '.jpg"> \
+            </div> \
+            <div class="card-stacked"> \
+              <div class="card-content"> \
+                <ul> \
+                  <li><h6> '+event.start_date+' to '+event.end_date+'</h6></li> \
+                  <li><h6><a id="unique-link-' + cur + '" onclick=loadEventInfo(event)>'+ event.ename +'</a></h6></li> \
+                </ul> \
+                <div id="recommendations" style="color: darkgrey; float: right;">Because you chose \
+                    <span class="interest">'+event.tag+'</span> \
+              </div> \
+              </div> \
+              <div class="card-action"> \
+                <a class="button modal-trigger" href="#map" data-latLng="'+event.lon+', '+event.lat+'">Address: '+event.address_1+'</a> \
+              </div> \
+            </div> \
+          </div>')
+
+        cur += 1
+      }
     }
 
     function getEvents() {
@@ -221,11 +166,38 @@
 
     }
 
+    ////////////////////////////////////////////////////////////////////////////
+    // Event modal
+    ////////////////////////////////////////////////////////////////////////////
+
+    function loadEventInfo(event) {
+      clicked_event = events[event.srcElement.id.slice(-1)];
+
+      var elem = document.querySelector('.event_popup')
+      var modal = M.Modal.getInstance(elem)
+
+      addEventInfo( clicked_event.ename, clicked_event.start_date, clicked_event.end_date,  clicked_event.lname, clicked_event.num_attending, clicked_event.description)
+
+      modal.open()
+    }
+
+    function addEventInfo(ename, start, end, lname, att, desc) {
+      var curr_event_info = document.getElementById('curr_event_info')
+      curr_event_info.innerHTML = '<h4 id="event_name">' + ename + '</h4> <br> <h3 id="event_date">'+ start + ' to ' + end + '</h3> <h3 id="event_loc">'+ lname + '</h3> <p id="event_people">' + att + ' attending</p> <div id="event_desc">' + desc + '</div>'
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Filters modal
+    ////////////////////////////////////////////////////////////////////////////
+
     function addTagFilters() {
       var tag_filters = document.getElementById('tag_filters')
       tag_filters.innerHTML = ''
       var tag_arr = Array.from(tag_set)
+      // tag_filters.innerHTML += '<div class="row">'
       for (var i = 0; i < tag_arr.length; i++) {
+        // if (i % 3 == 0 && i !=0) tag_filters.innerHTML += '</div>'
         // if (i % 3 == 0 && i !=0) tag_filters.innerHTML += '<div class="row">'
         tag_filters.innerHTML += '<div class="col s3"><label><input id="'+tag_arr[i]+'" class="tagf" type="checkbox" checked="checked" /><span>'+tag_arr[i]+'</span></label></div>'
       }
@@ -241,6 +213,7 @@
       if (cur_p == 0) return;
       cur_p -=1
       createRows(cur_p)
+      addEventClickListeners(cur_p)
       showPageNum()
     }
 
@@ -248,6 +221,7 @@
       if (cur_p >= events.length/10 - 1) return;
       cur_p +=1
       createRows(cur_p)
+      addEventClickListeners(cur_p)
       showPageNum()
     }
 
@@ -264,6 +238,8 @@
           tag_checks[i].checked = true
         }
       }
+
+
       modal.open()
     }
 
@@ -296,7 +272,14 @@
     function showData() {
       cur_p = 0
       createRows(cur_p)
+      addEventClickListeners(cur_p)
       showPageNum()
+    }
+
+    function closeFilters() {
+      var elem = document.querySelector('.modal.filter')
+      var modal = M.Modal.getInstance(elem)
+      modal.close()
     }
 
     function filterNumDays(days, event_list) {
@@ -305,9 +288,7 @@
       var result = []
       for (var i = 0; i < event_list.length; i++) {
         var e = event_list[i]
-        var split_date = e.start_date.split(' ')
-        var date_string = split_date[0] + ' ' + split_date[1] + ', ' + today.getFullYear() + ' ' + split_date[2] + ' ' + split_date[3]
-        var e_date = new Date(date_string)
+        var e_date = new Date(today.getFullYear() + e.start_date)
         var diff_ms = (e_date - today)
         if (diff_ms < ms && diff_ms > 0) {
           result.push(event_list[i])
@@ -333,11 +314,15 @@
       }
     }
 
-    function closeFilters() {
-      var elem = document.querySelector('.modal.filter')
-      var modal = M.Modal.getInstance(elem)
-      modal.close()
-    }
+    $('.click-scroll-to-top').click(function() {
+        $('html, body').animate({
+            scrollTop: $(".recommendations-header").offset().top
+        }, 500);
+    });
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Map modal
+    ////////////////////////////////////////////////////////////////////////////
 
     getEvents()
 

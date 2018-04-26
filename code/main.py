@@ -18,8 +18,10 @@ from user_class import User
 try:
     from google.appengine.api import mail
     from google.appengine.api import app_identity
+    gae_imported = True
 except ImportError:
     logging.warning('google app engine unable to be imported')
+    gae_imported = False
 
 app = Flask(__name__)
 app.debug = True
@@ -30,19 +32,17 @@ app.config['SECRET_KEY'] = 'secretkey123984392032'
 LOGIN_MANAGER = LoginManager()
 LOGIN_MANAGER.init_app(app)
 
-# These environment variables are configured in app.yaml.
 CLOUDSQL_CONNECTION_NAME = os.environ.get('CLOUDSQL_CONNECTION_NAME')
 CLOUDSQL_USER = os.environ.get('CLOUDSQL_USER')
 CLOUDSQL_PASSWORD = os.environ.get('CLOUDSQL_PASSWORD')
 
 DB_HOST_DEV = '35.193.223.145'
-
 ENV_DB = 'Dev'
+DB_UNAME = 'kayvon'
+DB_PSSWD = 'kayvon'
 
 API = Api(app)
-RANDOM_KEY = '472389hewhuw873dsa4245193ej23yfehw'
-
-BING_KEY = "50e4e5baced54241a030d0f5b56bee7c"
+EMAILCONFKEY = '472389hewhuw873dsa4245193ej23yfehw'
 
 
 def connect_to_cloudsql():
@@ -63,7 +63,7 @@ def connect_to_cloudsql():
 
     else:
         database = MySQLdb.connect(
-            host=DB_HOST_DEV, user='kayvon', passwd='kayvon', db='Dev', port=3306)
+            host=DB_HOST_DEV, user=DB_UNAME, passwd=DB_PSSWD, db=ENV_DB, port=3306)
 
     return database
 
@@ -76,7 +76,7 @@ def query_for_user(user):
     """
     database = connect_to_cloudsql()
     cursor = database.cursor()
-    cursor.execute("SELECT * FROM " + ENV_DB + ".Users WHERE username='" + user.username + "'")
+    cursor.execute("SELECT * FROM Users WHERE username='" + user.username + "'")
     data = cursor.fetchone()
     database.close()
     return data
@@ -105,8 +105,7 @@ def get_user_from_username(user_name):
     database = connect_to_cloudsql()
     cursor = database.cursor()
     cursor.execute(
-        "SELECT username, password, email, fname, lname, dob, timezone, email_verified FROM " +
-        ENV_DB + ".Users WHERE username='" + user_name + "'")
+        "SELECT username, password, email, fname, lname, dob, timezone, email_verified FROM Users WHERE username='" + user_name + "'")
     data = cursor.fetchone()
     database.close()
     return data
@@ -115,7 +114,6 @@ def get_user_from_username(user_name):
 @LOGIN_MANAGER.user_loader
 def load_user(user_name):
     """Creates a User class from queried user information.
-
     :param user_name: String username.
     :return: New User object.
     """
@@ -134,8 +132,8 @@ def insert_new_user(user):
     database = connect_to_cloudsql()
     cursor = database.cursor()
 
-    query = "INSERT INTO " + ENV_DB + \
-            ".Users(username, password, fname, lname, dob, date_joined, timezone, " \
+    query = "INSERT INTO " \
+            "Users(username, password, fname, lname, dob, date_joined, timezone, " \
             "email, email_verified) VALUES('{}', '{}', {}, {}, {}, {}, {}, {}, {})".format(
                 user.username,
                 user.password,
@@ -199,7 +197,8 @@ def register():
 
         if register_user(new_user):
             login_user(new_user)
-            send_email(new_user.email, new_user.username)
+            if gae_imported:
+                send_email(new_user.email, new_user.username)
             return redirect(url_for('home'))
         else:
             error = 'Username taken.'
@@ -213,7 +212,7 @@ def verify():
 
     :return: HTML file for email verification.
     """
-    if request.method == 'POST':
+    if request.method == 'POST' and gae_imported:
         send_email(current_user.email, current_user.username)
     return render_template('verify_email.html')
 
@@ -302,6 +301,7 @@ def helper_strip_date(data):
     return data
 
 
+
 def purge_user_tags(user):
     """Deletes all user tags from database.
 
@@ -311,7 +311,7 @@ def purge_user_tags(user):
     database = connect_to_cloudsql()
     cursor = database.cursor()
 
-    query = "DELETE FROM " + ENV_DB + ".UserTags WHERE username='{}'".format(user.username)
+    query = "DELETE FROM UserTags WHERE username='{}'".format(user.username)
     cursor.execute(query)
     database.commit()
     database.close()
@@ -319,7 +319,6 @@ def purge_user_tags(user):
 
 def fill_user_tags(user, user_survey):
     """Inserts user tags into database for recommendations from survey.
-
     :param user: Object User.
     :param user_survey: Object Survey.
     :return: None.
@@ -330,7 +329,7 @@ def fill_user_tags(user, user_survey):
     for items in [user_survey.hobbies, user_survey.causes,
                   user_survey.fitness, user_survey.arts_and_culture]:
         for item in items:
-            query = "INSERT INTO " + ENV_DB + ".UserTags(username, tag, category) " \
+            query = "INSERT INTO UserTags(username, tag, category) " \
                                               "VALUES ('{}', '{}', '{}') " \
                                               "ON DUPLICATE KEY UPDATE tag=VALUES(tag), " \
                                               "category=VALUES(category)".format(
@@ -349,7 +348,7 @@ def query_for_survey(user):
     """
     database = connect_to_cloudsql()
     cursor = database.cursor()
-    cursor.execute("SELECT * FROM " + ENV_DB + ".UserTags where username='" + user.username + "'")
+    cursor.execute("SELECT * FROM UserTags where username='" + user.username + "'")
     data = cursor.fetchone()
     database.close()
     return data
@@ -428,8 +427,8 @@ def fill_event(event):
     cursor = database.cursor()
 
     # Insert location of event into Locations table
-    location_query = "INSERT IGNORE INTO " + ENV_DB + \
-                     ".Locations(lname, lat, lon, address_1, address_2, zip, city, state) " \
+    location_query = "INSERT IGNORE INTO " \
+                     "Locations(lname, lat, lon, address_1, address_2, zip, city, state) " \
                      "VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')".format(
                          event.name, event.lat, event.lng,
                          event.formatted_address, event.address_2,
@@ -439,7 +438,7 @@ def fill_event(event):
 
     # Get lid of last inserted locatiion, add event to Events table
     lid = cursor.lastrowid
-    query = "INSERT INTO " + ENV_DB + ".Events(ename, description, start_date, end_date, " \
+    query = "INSERT INTO Events(ename, description, start_date, end_date, " \
                                       "num_cap, num_attending, lid)" \
                                       " VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}')".format(
                                           event.event_name, event.description,
@@ -449,7 +448,7 @@ def fill_event(event):
 
     # Insert category into EventTags
     eid = cursor.lastrowid
-    query = "INSERT INTO " + ENV_DB + ".EventTags(eid, tag, category) " \
+    query = "INSERT INTO EventTags(eid, tag, category) " \
                                       "VALUES ('{}', '{}')".format(
                                           eid, event.category)
 
@@ -464,7 +463,7 @@ def send_email(address, username):
     :param username: Object User.
     :return: None.
     """
-    confirmation_url = 'gennyc-dev.appspot.com/emailConf/{}/{}'.format(RANDOM_KEY, username)
+    confirmation_url = 'gennyc-dev.appspot.com/emailConf/{}/{}'.format(EMAILCONFKEY, username)
     sender_address = (
         'genNYC <support@{}.appspotmail.com>'.format(
             app_identity.get_application_id()))
@@ -473,7 +472,8 @@ def send_email(address, username):
            "Please confirm your email address by clicking on the link below:" \
            "\n\n{}".format(confirmation_url)
     # print(sender_address, address, subject, body)
-    mail.send_mail(sender_address, address, subject, body)
+    if gae_imported:
+        mail.send_mail(sender_address, address, subject, body)
 
 
 @app.route('/emailConf/<string:key>/<string:username>')
@@ -489,7 +489,7 @@ def confirm(key, username):
 
     database = connect_to_cloudsql()
     cursor = database.cursor()
-    cursor.execute("UPDATE " + ENV_DB + ".Users SET email_verified=TRUE WHERE username='" +
+    cursor.execute("UPDATE Users SET email_verified=TRUE WHERE username='" +
                    username + "'")
     database.commit()
     database.close()
@@ -506,7 +506,7 @@ def get_group_by_id(gid):
     """
     database = connect_to_cloudsql()
     cursor = database.cursor()
-    query = "SELECT groupName from " + ENV_DB + ".Groups WHERE gid='" + gid + "'"
+    query = "SELECT groupName from Groups WHERE gid='" + gid + "'"
     cursor.execute(query)
     data = cursor.fetchone()
     database.close()
@@ -522,12 +522,13 @@ def get_group_names(user):
     database = connect_to_cloudsql()
     cursor = database.cursor()
 
-    query = "SELECT groupName, status from " + ENV_DB + \
-            ".Groups WHERE username='" + user.username + "'"
+    query = "SELECT groupName, status from "  \
+            "Groups WHERE username='" + user.username + "'"
     cursor.execute(query)
     data = cursor.fetchall()
     database.close()
     return list((i[0], i[1]) for i in data)
+
 
 
 def get_group_members(group_name):
@@ -538,8 +539,8 @@ def get_group_members(group_name):
     """
     database = connect_to_cloudsql()
     cursor = database.cursor()
-    query = ("SELECT username, creator, gid from " + ENV_DB +
-             ".Groups WHERE groupName='{}'").format(group_name)
+    query = ("SELECT username, creator, gid from "
+             "Groups WHERE groupName='{}'").format(group_name)
     cursor.execute(query)
     data = cursor.fetchall()
     database.close()
@@ -557,7 +558,7 @@ def add_group(group_name, users, new):
     database = connect_to_cloudsql()
     g_id = 0
     cursor = database.cursor()
-    cursor.execute('SELECT max(gid) from ' + ENV_DB + '.Groups')
+    cursor.execute('SELECT max(gid) from Groups')
     data = cursor.fetchone()
     if data[0]:
         g_id = int(data[0])
@@ -572,11 +573,12 @@ def add_group(group_name, users, new):
         if user == current_user.username:
             status = '1'
             creator = 1
-        query = ("INSERT INTO " + ENV_DB + ".Groups(gid, groupName, username, status, creator) \
+        query = ("INSERT INTO Groups(gid, groupName, username, status, creator) \
         VALUES ('{}','{}','{}','{}','{}')").format(g_id, group_name, user, status, creator)
         cursor.execute(query)
     database.commit()
     database.close()
+
 
 
 @app.route('/groups')
@@ -627,6 +629,7 @@ class CreateGroup(Resource):
 API.add_resource(CreateGroup, '/api/new_group/<string:groupname>/<string:new_flag>')
 
 
+
 class CheckValidUser(Resource):
     """This checks if the user is valid.
 
@@ -642,7 +645,7 @@ class CheckValidUser(Resource):
             return {}, 201
         database = connect_to_cloudsql()
         cursor = database.cursor()
-        cursor.execute("SELECT * FROM " + ENV_DB + ".Users WHERE username='" + username + "'")
+        cursor.execute("SELECT * FROM Users WHERE username='" + username + "'")
         data = cursor.fetchone()
         database.close()
         if data:
@@ -651,6 +654,7 @@ class CheckValidUser(Resource):
 
 
 API.add_resource(CheckValidUser, '/api/validate_username/<string:username>')
+
 
 
 class CheckValidUserExisting(Resource):
@@ -669,12 +673,12 @@ class CheckValidUserExisting(Resource):
             return {}, 201
         database = connect_to_cloudsql()
         cursor = database.cursor()
-        cursor.execute("SELECT * FROM " + ENV_DB + ".Users WHERE username='" + username + "'")
+        cursor.execute("SELECT * FROM Users WHERE username='" + username + "'")
         data = cursor.fetchone()
         if not data:
             return {}, 201
         cursor.execute(
-            "SELECT * FROM " + ENV_DB + ".Groups WHERE groupName='" +
+            "SELECT * FROM Groups WHERE groupName='" +
             group_name + "' AND username='" + username + "'")
         data = cursor.fetchone()
         if data:
@@ -684,6 +688,7 @@ class CheckValidUserExisting(Resource):
 
 API.add_resource(CheckValidUserExisting,
                  '/api/validate_username/existing/<string:group>/<string:username>')
+
 
 
 class CheckValidGroupName(Resource):
@@ -702,7 +707,7 @@ class CheckValidGroupName(Resource):
         database = connect_to_cloudsql()
         cursor = database.cursor()
         cursor.execute(
-            "SELECT * FROM " + ENV_DB + ".Groups WHERE groupName='" +
+            "SELECT * FROM Groups WHERE groupName='" +
             group_name + "' AND username='" + current_user.username + "'")
         data = cursor.fetchone()
         database.close()
@@ -712,6 +717,7 @@ class CheckValidGroupName(Resource):
 
 
 API.add_resource(CheckValidGroupName, '/api/validate_groupname/<string:group_name>')
+
 
 
 class RespondToRequest(Resource):
@@ -731,7 +737,7 @@ class RespondToRequest(Resource):
             status = 3
         database = connect_to_cloudsql()
         cursor = database.cursor()
-        cursor.execute("UPDATE " + ENV_DB + ".Groups SET status='" + str(status) + "' \
+        cursor.execute("UPDATE Groups SET status='" + str(status) + "' \
         WHERE username='" + current_user.username + "' AND groupName='" + group_name + "'")
         database.commit()
         database.close()
@@ -739,6 +745,7 @@ class RespondToRequest(Resource):
 
 
 API.add_resource(RespondToRequest, '/api/respond_to_request/<string:group_name>/<string:response>')
+
 
 
 class GetEventRecs(Resource):
@@ -766,6 +773,7 @@ class GetEventRecs(Resource):
 
 
 API.add_resource(GetEventRecs, '/api/get_event_recs')
+
 
 
 class GetGroupEventRecs(Resource):
@@ -797,6 +805,7 @@ class GetGroupEventRecs(Resource):
 API.add_resource(GetGroupEventRecs, '/api/get_group_event_recs/<string:group_id>')
 
 
+
 class GetGroupInterests(Resource):
     """Gets every user's interest in the group.
 
@@ -814,6 +823,7 @@ class GetGroupInterests(Resource):
 
 
 API.add_resource(GetGroupInterests, '/api/get_group_interests/<string:group_id>')
+
 
 @app.route('/profile')
 @login_required
@@ -843,7 +853,6 @@ def profile(username):
 
     return render_template('profile.html', user=user,
                            join_date=db_date_to_normal(user.join_date), tags=tags)
-
 
 @app.errorhandler(401)
 def page_not_found():

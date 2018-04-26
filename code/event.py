@@ -105,5 +105,3 @@ class EventForm(Form):
     sublocality = fields.StringField('City:')
     administrative_area_level_1_short = fields.StringField('State:')
 
-    def __init__(self):
-        self.initialized = True

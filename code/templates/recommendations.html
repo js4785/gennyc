@@ -120,7 +120,7 @@
             <div class="card-stacked"> \
               <div class="card-content"> \
                 <ul> \
-                  <li><h6> '+event.start_date+' to '+event.end_date+'</h6></li> \
+                  <li><h6> '+ event.start_date + ((event.end_date != null) ? (' to ' + event.end_date) : '') + '</h6></li> \
                   <li><h6><a id="unique-link-' + cur + '" onclick=loadEventInfo(event)>'+ event.ename +'</a></h6></li> \
                 </ul> \
                 <div id="recommendations" style="color: darkgrey; float: right;">Because you chose \
@@ -128,7 +128,7 @@
               </div> \
               </div> \
               <div class="card-action"> \
-                <a class="button modal-trigger" href="#map" data-latLng="'+event.lon+', '+event.lat+'">Address: '+event.address_1+'</a> \
+                <a class="button modal-trigger" href="#map" data-latLng="'+event.lon+', '+event.lat+'">' + ((event.address_1 != null) ? ("Address: " + event.address_1) : '') + '</a> \
               </div> \
             </div> \
           </div>')
@@ -176,14 +176,14 @@
       var elem = document.querySelector('.event_popup')
       var modal = M.Modal.getInstance(elem)
 
-      addEventInfo( clicked_event.ename, clicked_event.start_date, clicked_event.end_date,  clicked_event.lname, clicked_event.num_attending, clicked_event.description)
+      addEventInfo( clicked_event.ename, clicked_event.start_date, clicked_event.end_date,  clicked_event.address_1, clicked_event.num_attending, clicked_event.description)
 
       modal.open()
     }
 
-    function addEventInfo(ename, start, end, lname, att, desc) {
+    function addEventInfo(ename, start, end, address, att, desc) {
       var curr_event_info = document.getElementById('curr_event_info')
-      curr_event_info.innerHTML = '<h4 id="event_name">' + ename + '</h4> <br> <h3 id="event_date">'+ start + ' to ' + end + '</h3> <h3 id="event_loc">'+ lname + '</h3> <p id="event_people">' + att + ' attending</p> <div id="event_desc">' + desc + '</div>'
+      curr_event_info.innerHTML = '<h2 id="event_name">' + ename + '</h2> <h5 id="event_date">'+ start + ((end != null) ? (' to ' + end) : '') + '</h5> <h5 id="event_loc">'+ ((address != null) ? ("Address: " + address) : '') + '</h5> <p id="event_people"></p> <div id="event_desc">' + desc + '</div>'
     }
 
 

@@ -67,15 +67,15 @@ class MainTest(unittest.TestCase):
         rv = self.login(INVALID_UNAME, VALID_PSSWD)
         assert b'Error' in rv.data
 
-    def test_connect_to_cloudsql():
+    def test_connect_to_cloudsql(self):
         db = main.connect_to_cloudsql()
         cursor = db.cursor()
         cursor.execute("SELECT DATABASE();")
         data = cursor.fetchone()
         db.close()
-        assert data == "Dev"
+        assert data == ('Dev',)
 
-    def test_query_for_user(user):
+    def test_query_for_user(self):
         my_user = User(VALID_UNAME, VALID_PSSWD)
         rv = main.query_for_user(my_user)
         assert rv is not None
@@ -84,7 +84,7 @@ class MainTest(unittest.TestCase):
         rv = main.query_for_user(my_user)
         assert rv is None
 
-    def test_authenticate_user():
+    def test_authenticate_user(self):
         my_user = User(VALID_UNAME, VALID_PSSWD)
         rv = main.authenticate_user(my_user)
         assert rv == True
@@ -93,13 +93,13 @@ class MainTest(unittest.TestCase):
         rv = main.authenticate_user(my_user)
         assert rv == False
 
-    def test_get_user_from_username():
-        my_user = User(VALID_UNAME, VALID_PSSWD)
-        rv = main.get_user_from_username(my_user)
-        assert rv.password == VALID_PSSWD
-        assert rv.username == VALID_UNAME
+    def test_get_user_from_username(self):
+        rv = main.get_user_from_username(VALID_UNAME)
 
-    def test_insert_new_user():
+        assert rv[1] == VALID_PSSWD
+        assert rv[0] == VALID_UNAME
+
+    def test_insert_new_user(self):
         try:
             my_user = User( VALID_UNUSED_UNAME,
                             VALID_UNUSED_PSSWD )
@@ -124,7 +124,7 @@ class MainTest(unittest.TestCase):
 
         teardown_new_user()
 
-    def test_register_user():
+    def test_register_user(self):
         try:
             my_user = User( VALID_UNUSED_UNAME,
                             VALID_UNUSED_PSSWD )
@@ -147,6 +147,8 @@ class MainTest(unittest.TestCase):
             pass
 
         teardown_new_user()
+
+
 
 
 

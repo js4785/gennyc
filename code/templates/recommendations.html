@@ -183,7 +183,7 @@
 
     function addEventInfo(ename, start, end, address, att, desc) {
       var curr_event_info = document.getElementById('curr_event_info')
-      curr_event_info.innerHTML = '<h2 id="event_name">' + ename + '</h2> <h5 id="event_date">'+ start + ((end != null) ? (' to ' + end) : '') + '</h5> <h5 id="event_loc">'+ ((address != null) ? ("Address: " + address) : '') + '</h5> <p id="event_people">' + att + ' attending</p> <div id="event_desc">' + desc + '</div>'
+      curr_event_info.innerHTML = '<h2 id="event_name">' + ename + '</h2> <h5 id="event_date">'+ start + ((end != null) ? (' to ' + end) : '') + '</h5> <h5 id="event_loc">'+ ((address != null) ? ("Address: " + address) : '') + '</h5> <p id="event_people"></p> <div id="event_desc">' + desc + '</div>'
     }
 
 

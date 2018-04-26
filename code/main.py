@@ -18,6 +18,7 @@ from user_class import User
 try:
     from google.appengine.api import mail
     from google.appengine.api import app_identity
+    GAE_APP_ID = app_identity.get_application_id()
     gae_imported = True
 except ImportError:
     logging.warning('google app engine unable to be imported')
@@ -36,7 +37,18 @@ CLOUDSQL_CONNECTION_NAME = os.environ.get('CLOUDSQL_CONNECTION_NAME')
 CLOUDSQL_USER = os.environ.get('CLOUDSQL_USER')
 CLOUDSQL_PASSWORD = os.environ.get('CLOUDSQL_PASSWORD')
 
-DB_HOST_DEV = '35.193.223.145'
+if gae_imported:
+    if GAE_APP_ID == "gennyc-dev":
+        DB_HOST_DEV = '35.193.223.145'
+    elif GAE_APP_ID == "gennyc-prod":
+        DB_HOST_DEV = '35.225.218.123'
+    elif GAE_APP_ID == "gennyc-uat":
+        DB_HOST_DEV = '35.225.142.179'
+    else:
+        raise Exception('invalid project id')
+else:
+    DB_HOST_DEV = '35.193.223.145'
+
 ENV_DB = 'Dev'
 DB_UNAME = 'kayvon'
 DB_PSSWD = 'kayvon'

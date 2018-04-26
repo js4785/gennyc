@@ -109,6 +109,18 @@ def get_user_from_username(user_name):
     return data
 
 
+@LOGIN_MANAGER.user_loader
+def load_user(user_name):
+    """Creates a User class from queried user information.
+    :param user_name: String username.
+    :return: New User object.
+    """
+    data = get_user_from_username(user_name)
+    if data is None:
+        return None
+    return User(*data)
+
+
 def insert_new_user(user):
     """Inserts a new user and its information into the database.
 

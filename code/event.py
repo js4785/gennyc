@@ -104,6 +104,3 @@ class EventForm(Form):
     postal_code = fields.StringField('Zip code:')
     sublocality = fields.StringField('City:')
     administrative_area_level_1_short = fields.StringField('State:')
-
-    def __init__(self):
-        self.initialized = True

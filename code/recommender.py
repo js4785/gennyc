@@ -28,20 +28,6 @@ class Recommend:
         self.most_interested = sorted([i[0] for i in data])
         return self.most_interested
 
-        # values = main.query_for_survey(self.user)
-        # survey_results = []
-        # iterresults = iter(values)
-        # next(iterresults)
-
-        # for x in iterresults:
-        #     if len(x) > 1:
-        #         survey_results.append(x)
-        #     else:
-        #         pass
-
-        # self.most_interested = sorted(survey_results)
-        # return self.most_interested
-
 
     def get_events(self):
         db = main.connect_to_cloudsql()

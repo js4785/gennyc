@@ -16,7 +16,9 @@ handlers:
 - url: /jobs/.*
   script: code.jobs.app
   login: admin
-- url: .*  # This regex directs all routes to main.app
+- url: /api/model/.*
+  script: code.model_api.app
+- url: .*
   script: code.main.app
 - url: /static
   static_dir: code/static

@@ -52,6 +52,24 @@ code/user_class.py       38      5    87%
 -----------------------------------------
 TOTAL                   714    129    82%
 ```
+
+Also, when step 3 is run with `--branch` coverage, the following is observed:
+
+```
+Name                  Stmts   Miss Branch BrPart  Cover
+-------------------------------------------------------
+code/event.py            41      1      2      0    98%
+code/main.py            426    103    122     30    72%
+code/model_api.py        15      1      2      1    88%
+code/predictor.py       119     13     52      4    85%
+code/recommender.py      68      7     10      0    91%
+code/surveys.py           7      0      0      0   100%
+code/user_class.py       38      5      6      2    80%
+-------------------------------------------------------
+TOTAL                   714    130    194     37    78%
+```
+
+Thus, we have 82% statement coverage and 78% branch coverage.
  
 
 ## Licensing

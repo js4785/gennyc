@@ -37,7 +37,7 @@ CLOUDSQL_PASSWORD = os.environ.get('CLOUDSQL_PASSWORD')
 DB_HOST_DEV = '35.193.223.145'
 ENV_DB = 'Dev'
 
-api = Api(app)
+API = Api(app)
 EMAILCONFKEY = '472389hewhuw873dsa4245193ej23yfehw'
 
 
